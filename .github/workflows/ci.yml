@@ -1,0 +1,59 @@
+# Runs on every push and pull request: typecheck, all tests against a real
+# Postgres, the ASCII rule for source files, and a production build.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kasrat
+          POSTGRES_PASSWORD: kasrat
+          POSTGRES_DB: kasrat_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kasrat"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://kasrat:kasrat@localhost:5432/kasrat_test
+      DIRECT_URL: postgresql://kasrat:kasrat@localhost:5432/kasrat_test
+      TEST_DATABASE_URL: postgresql://kasrat:kasrat@localhost:5432/kasrat_test
+      APP_URL: http://localhost:3000
+      # Throwaway values for CI only. Real secrets live in Vercel.
+      JWT_SECRET: ci-jwt-secret-ci-jwt-secret-ci-jwt-secret-0001
+      JWT_ADMIN_SECRET: ci-admin-secret-ci-admin-secret-ci-admin-0002
+      OTP_PEPPER: ci-otp-pepper-ci-otp-pepper-ci-otp-pepper-0003
+      ENCRYPTION_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
+      QR_SECRET: ci-qr-secret-ci-qr-secret-ci-qr-secret-00004
+      CRON_SECRET: ci-cron-secret-0005
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Source files are ASCII only (Hindi/Punjabi live in /locales)
+        run: |
+          if grep -rlP '[^\x00-\x7F]' --include=*.ts --include=*.tsx app lib components tests prisma scripts proxy.ts | grep -v lib/generated; then
+            echo "Non-ASCII characters found in the files above"; exit 1
+          fi
+      - run: pnpm typecheck
+      - run: pnpm test:db
+      - run: pnpm test
+      - run: pnpm exec next build

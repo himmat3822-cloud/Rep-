@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": [
+    "sin1"
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/billing",
+      "schedule": "30 0 * * *"
+    },
+    {
+      "path": "/api/cron/attendance",
+      "schedule": "35 18 * * *"
+    },
+    {
+      "path": "/api/cron/motivation",
+      "schedule": "50 18 * * *"
+    },
+    {
+      "path": "/api/cron/messages",
+      "schedule": "30 4 * * *"
+    }
+  ]
+}

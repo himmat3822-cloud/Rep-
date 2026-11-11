@@ -1,0 +1,38 @@
+const TONES: Record<string, string> = {
+  TRIAL: 'badge-blue',
+  ACTIVE: 'badge-lime',
+  PAST_DUE: 'badge-orange',
+  READ_ONLY: 'badge-orange',
+  SUSPENDED: 'badge-red',
+  CANCELLED: 'badge-grey',
+  PAID: 'badge-lime',
+  DUE: 'badge-orange',
+  FAILED: 'badge-red',
+  VOID: 'badge-grey',
+  ARCHIVED: 'badge-grey',
+  OWNER: 'badge-lime',
+  TRAINER: 'badge-orange',
+  DESK: 'badge-purple',
+  ADMIN: 'badge-purple',
+  SYSTEM: 'badge-blue',
+  STAFF: 'badge-lime',
+  ATHLETE: 'badge-blue',
+  NEW: 'badge-blue',
+  REGULAR: 'badge-lime',
+  SLIPPING: 'badge-orange',
+  INACTIVE: 'badge-red',
+  EXPIRED: 'badge-grey',
+  FROZEN: 'badge-purple',
+  PENDING: 'badge-orange',
+  APPROVED: 'badge-lime',
+  REJECTED: 'badge-red',
+  QUEUED: 'badge-grey',
+  SENT: 'badge-blue',
+  DELIVERED: 'badge-lime',
+  READ: 'badge-lime',
+  BLOCKED: 'badge-orange',
+}
+
+export function StatusBadge({ value, label }: { value: string; label?: string }) {
+  return <span className={`badge ${TONES[value] ?? 'badge-grey'}`}>{label ?? value.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}</span>
+}

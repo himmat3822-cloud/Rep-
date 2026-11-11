@@ -1,0 +1,10 @@
+pmOnFail: ignore
+
+minimumReleaseAgeExclude:
+  - '@next/*'
+  - next
+
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true

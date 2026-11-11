@@ -1,0 +1,52 @@
+import {
+  BarChart3,
+  Building2,
+  CalendarDays,
+  CircleHelp,
+  ClipboardList,
+  CreditCard,
+  Dumbbell,
+  Flame,
+  LayoutDashboard,
+  Megaphone,
+  MessageCircle,
+  QrCode,
+  Receipt,
+  Settings,
+  ShieldCheck,
+  TrendingUp,
+  Trophy,
+  UserPlus,
+  Users,
+  Wallet,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-react'
+
+// Server components pass icon KEYS (strings) to the client shell, because
+// icon components cannot cross the server/client boundary as props.
+export const NAV_ICONS = {
+  overview: LayoutDashboard,
+  members: Users,
+  attendance: CalendarDays,
+  payments: Wallet,
+  dues: Receipt,
+  leads: TrendingUp,
+  risk: Flame,
+  staff: ShieldCheck,
+  reports: BarChart3,
+  announcements: Megaphone,
+  complaints: Wrench,
+  scanner: QrCode,
+  quickAdd: UserPlus,
+  collect: CreditCard,
+  workouts: Dumbbell,
+  sessions: ClipboardList,
+  gyms: Building2,
+  settings: Settings,
+  help: CircleHelp,
+  messages: MessageCircle,
+  challenges: Trophy,
+} satisfies Record<string, LucideIcon>
+
+export type NavIconKey = keyof typeof NAV_ICONS

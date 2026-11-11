@@ -1,0 +1,1258 @@
+// Kasrat - multi-tenant gym management
+// Rules:
+// - Every tenant-owned model has gymId and is listed in lib/db/tenant.ts TENANT_MODELS.
+// - Money is stored in paise (Int). Never floats.
+// - Phones are stored in E.164 (+91XXXXXXXXXX).
+// - The datasource URL lives in prisma.config.ts (Prisma 7).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  READ_ONLY
+  SUSPENDED
+  CANCELLED
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum StaffKind {
+  OWNER
+  TRAINER
+  DESK
+}
+
+enum Language {
+  EN
+  HI
+  PA
+}
+
+enum AttendanceStatus {
+  NEW
+  REGULAR
+  SLIPPING
+  INACTIVE
+  EXPIRED
+  FROZEN
+}
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  FROZEN
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+  BANK
+  RAZORPAY
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum DueStatus {
+  OPEN
+  PAID
+  WAIVED
+}
+
+enum CheckInMethod {
+  QR_ROTATING
+  QR_ENTRANCE
+  GEO_SELF
+  MANUAL
+  REGISTER
+  BIOMETRIC
+}
+
+enum LeadSource {
+  WALK_IN
+  INSTAGRAM
+  GOOGLE
+  REFERRAL
+  WEBSITE
+  OTHER
+}
+
+enum LeadStage {
+  NEW
+  TRIAL
+  FOLLOW_UP
+  JOINED
+  LOST
+}
+
+enum MessageChannel {
+  WHATSAPP
+  EMAIL
+  INAPP
+  PUSH
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  BLOCKED
+}
+
+enum PrincipalType {
+  ADMIN
+  STAFF
+  ATHLETE
+  SYSTEM
+}
+
+enum OtpScope {
+  STAFF
+  ATHLETE
+  SIGNUP
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PlatformInvoiceStatus {
+  DUE
+  PAID
+  FAILED
+  VOID
+}
+
+enum ComplaintKind {
+  FEEDBACK
+  EQUIPMENT
+  CLEANLINESS
+  STAFF
+  OTHER
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum HealthMetricType {
+  STEPS
+  ACTIVE_CALORIES
+  HEART_RATE
+  SLEEP_MINUTES
+  WEIGHT_KG
+  WORKOUT_MINUTES
+}
+
+enum HealthSource {
+  MANUAL
+  TERRA
+  HEALTHKIT
+  HEALTH_CONNECT
+}
+
+enum ExpenseCategory {
+  RENT
+  SALARY
+  ELECTRICITY
+  EQUIPMENT
+  MAINTENANCE
+  MARKETING
+  OTHER
+}
+
+enum RiskContactOutcome {
+  PENDING
+  REACHED_COMING_BACK
+  REACHED_NOT_INTERESTED
+  NO_ANSWER
+  RENEWED
+}
+
+// ---------------------------------------------------------------------------
+// Platform (Kasrat itself) - NOT tenant scoped
+// ---------------------------------------------------------------------------
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  adminId      String    @unique
+  name         String
+  passwordHash String
+  totpSecretEnc String?
+  totpEnabled  Boolean   @default(false)
+  lastTotpStep Int?
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  auditLogs AuditLog[]
+}
+
+model PlatformPlan {
+  id                 String   @id @default(cuid())
+  code               String   @unique
+  name               String
+  description        String   @default("")
+  monthlyPricePaise  Int
+  annualPricePaise   Int
+  memberLimit        Int?
+  branchLimit        Int
+  extraBranchPaise   Int?
+  staffLimit         Int?
+  trainerLimit       Int?
+  deskLimit          Int?
+  whatsappQuota      Int
+  features           String[]
+  isPopular          Boolean  @default(false)
+  sortOrder          Int      @default(0)
+  archived           Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  subscriptions GymSubscription[]
+}
+
+model GymSubscription {
+  id                     String             @id @default(cuid())
+  gymId                  String             @unique
+  gym                    Gym                @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  planId                 String
+  plan                   PlatformPlan       @relation(fields: [planId], references: [id])
+  cycle                  BillingCycle       @default(MONTHLY)
+  status                 SubscriptionStatus @default(TRIAL)
+  trialEndsAt            DateTime?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  nextDueAt              DateTime?
+  pastDueSince           DateTime?
+  suspendedAt            DateTime?
+  dataPurgeAfter         DateTime?
+  razorpaySubscriptionId String?            @unique
+  razorpayCustomerId     String?
+  manualOverride         Boolean            @default(false)
+  cancelAtPeriodEnd      Boolean            @default(false)
+  statusReason           String?
+  lastReminderAt         DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  invoices PlatformInvoice[]
+}
+
+model GymOverride {
+  id                String    @id @default(cuid())
+  gymId             String    @unique
+  gym               Gym       @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  customPricePaise  Int?
+  extraMembers      Int       @default(0)
+  extraBranches     Int       @default(0)
+  extraStaff        Int       @default(0)
+  extraFeatures     String[]
+  removedFeatures   String[]
+  whatsappTopUp     Int       @default(0)
+  freeMonthsLeft    Int       @default(0)
+  note              String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model PlatformInvoice {
+  id                String                @id @default(cuid())
+  subscriptionId    String
+  subscription      GymSubscription       @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  number            String                @unique
+  amountPaise       Int
+  gstPaise          Int
+  status            PlatformInvoiceStatus @default(DUE)
+  periodStart       DateTime
+  periodEnd         DateTime
+  dueAt             DateTime
+  paidAt            DateTime?
+  razorpayPaymentId String?               @unique
+  createdAt         DateTime              @default(now())
+
+  @@index([status, dueAt])
+}
+
+model PlatformAnnouncement {
+  id           String   @id @default(cuid())
+  title        String
+  body         String
+  audience     String   @default("ALL")
+  sendWhatsapp Boolean  @default(false)
+  sendEmail    Boolean  @default(false)
+  recipients   Int      @default(0)
+  emailsSent   Int      @default(0)
+  whatsappSent Int      @default(0)
+  createdBy    String
+  createdAt    DateTime @default(now())
+}
+
+// Owner says "I paid Kasrat by UPI / bank transfer, here is the UTR".
+// The super admin verifies it and approves (which records the payment and
+// restores the gym) or rejects it with a reason.
+model PlatformPaymentClaim {
+  id          String      @id @default(cuid())
+  gymId       String
+  amountPaise Int
+  method      String
+  reference   String
+  note        String      @default("")
+  status      ClaimStatus @default(PENDING)
+  submittedBy String
+  decidedBy   String?
+  decidedAt   DateTime?
+  decision    String?
+  invoiceId   String?
+  createdAt   DateTime    @default(now())
+
+  @@index([status, createdAt])
+  @@index([gymId])
+}
+
+model PlatformCounter {
+  key   String @id
+  value Int    @default(0)
+}
+
+model AuditLog {
+  id          String        @id @default(cuid())
+  gymId       String?
+  actorType   PrincipalType
+  actorId     String
+  adminUserId String?
+  adminUser   AdminUser?    @relation(fields: [adminUserId], references: [id])
+  impersonatedBy String?
+  action      String
+  entity      String
+  entityId    String?
+  reason      String?
+  meta        Json?
+  ip          String?
+  createdAt   DateTime      @default(now())
+
+  @@index([gymId, createdAt])
+  @@index([actorType, actorId])
+}
+
+// ---------------------------------------------------------------------------
+// Tenant root
+// ---------------------------------------------------------------------------
+
+model Gym {
+  id                 String             @id @default(cuid())
+  slug               String             @unique
+  name               String
+  city               String
+  address            String             @default("")
+  gstNumber          String?
+  logoPublicId       String?
+  phone              String?
+  email              String?
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  ownerHandlesDesk   Boolean            @default(true)
+  athleteLabel       String             @default("Athlete")
+  athleteLabelPlural String             @default("Athletes")
+  defaultLanguage    Language           @default(EN)
+  timezone           String             @default("Asia/Kolkata")
+  sessionMinutes     Int                @default(75)
+  settings           Json               @default("{}")
+  customDomain       String?            @unique
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  subscription GymSubscription?
+  override     GymOverride?
+  branches     Branch[]
+  roles        Role[]
+  staff        GymUser[]
+  athletes     Athlete[]
+}
+
+model Branch {
+  id            String   @id @default(cuid())
+  gymId         String
+  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  name          String
+  address       String   @default("")
+  latitude      Float?
+  longitude     Float?
+  geofenceMeters Int     @default(150)
+  hourlyCapacity Int     @default(40)
+  slotMinutes   Int      @default(60)
+  openingHours  Json     @default("{}")
+  holidays      DateTime[] @db.Date
+  entranceQrSecret String
+  isPrimary     Boolean  @default(false)
+  archived      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  homeAthletes Athlete[]
+  staff        GymUser[]
+  checkIns     CheckIn[]
+  slots        Slot[]
+
+  @@index([gymId])
+}
+
+model Role {
+  id          String    @id @default(cuid())
+  gymId       String
+  gym         Gym       @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  key         String
+  name        String
+  permissions String[]
+  isSystem    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  users GymUser[]
+
+  @@unique([gymId, key])
+  @@index([gymId])
+}
+
+model GymUser {
+  id               String    @id @default(cuid())
+  gymId            String
+  gym              Gym       @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  branchId         String?
+  branch           Branch?   @relation(fields: [branchId], references: [id])
+  roleId           String
+  role             Role      @relation(fields: [roleId], references: [id])
+  kind             StaffKind
+  name             String
+  phone            String
+  email            String?
+  passwordHash     String?
+  grants           String[]
+  denies           String[]
+  commissionPct    Int       @default(0)
+  // Price of one PT session for this trainer; commission = fee x commissionPct.
+  ptSessionFeePaise Int      @default(0)
+  language         Language  @default(EN)
+  active           Boolean   @default(true)
+  lastLoginAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  assignedAthletes Athlete[] @relation("TrainerAthletes")
+  ptSessions       PtSession[]
+  trainerNotes     TrainerNote[]
+
+  @@unique([gymId, phone])
+  @@unique([gymId, email])
+  @@index([gymId])
+  @@index([phone])
+  @@index([email])
+}
+
+// ---------------------------------------------------------------------------
+// Athletes and memberships
+// ---------------------------------------------------------------------------
+
+model Athlete {
+  id                 String           @id @default(cuid())
+  gymId              String
+  gym                Gym              @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  homeBranchId       String
+  homeBranch         Branch           @relation(fields: [homeBranchId], references: [id])
+  trainerId          String?
+  trainer            GymUser?         @relation("TrainerAthletes", fields: [trainerId], references: [id])
+  memberCode         String
+  name               String
+  phone              String
+  email              String?
+  gender             String?
+  dateOfBirth        DateTime?        @db.Date
+  joinedAt           DateTime         @default(now())
+  language           Language         @default(EN)
+  emergencyContactEnc String?
+  medicalNotesEnc    String?
+  status             AttendanceStatus @default(NEW)
+  statusComputedAt   DateTime?
+  lastVisitAt        DateTime?
+  streakDays         Int              @default(0)
+  bestStreak         Int              @default(0)
+  restDays           Int[]
+  referralCode       String
+  biometricId        String?
+  whatsappOptOut     Boolean          @default(false)
+  // Last time the member opened the app (throttled to once an hour).
+  lastAppAt          DateTime?
+  referredById       String?
+  hideFromLeaderboard Boolean         @default(false)
+  shareProgressWithTrainer Boolean    @default(true)
+  sharePhotosWithTrainer   Boolean    @default(false)
+  shareHealthWithTrainer   Boolean    @default(false)
+  lastAppOpenAt      DateTime?
+  pushSubscription   Json?
+  notes              String           @default("")
+  archived           Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@unique([gymId, phone])
+  @@unique([gymId, memberCode])
+  @@unique([gymId, referralCode])
+  @@unique([gymId, biometricId])
+  @@index([gymId, status])
+  @@index([gymId, homeBranchId])
+  @@index([gymId, trainerId])
+}
+
+model MembershipPlan {
+  id               String   @id @default(cuid())
+  gymId            String
+  name             String
+  durationDays     Int
+  pricePaise       Int
+  joiningFeePaise  Int      @default(0)
+  gstPercent       Int      @default(18)
+  gstInclusive     Boolean  @default(true)
+  maxFreezeDays    Int      @default(0)
+  crossBranch      Boolean  @default(false)
+  ptAddonPaise     Int?
+  ptSessionsIncluded Int    @default(0)
+  active           Boolean  @default(true)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([gymId])
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  gymId          String
+  athleteId      String
+  planId         String
+  status         MembershipStatus @default(ACTIVE)
+  startsAt       DateTime         @db.Date
+  endsAt         DateTime         @db.Date
+  pricePaise     Int
+  discountPaise  Int              @default(0)
+  freezeDaysUsed Int              @default(0)
+  frozenFrom     DateTime?        @db.Date
+  frozenUntil    DateTime?        @db.Date
+  ptSessionsLeft Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([gymId, athleteId])
+  @@index([gymId, endsAt])
+}
+
+model FreezeRequest {
+  id           String    @id @default(cuid())
+  gymId        String
+  athleteId    String
+  membershipId String
+  fromDate     DateTime  @db.Date
+  days         Int
+  reason       String    @default("")
+  status       String    @default("PENDING")
+  decidedById  String?
+  decidedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([gymId, status])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  gymId             String
+  athleteId         String
+  membershipId      String?
+  dueId             String?
+  amountPaise       Int
+  method            PaymentMethod
+  status            PaymentStatus @default(PAID)
+  razorpayOrderId   String?       @unique
+  razorpayPaymentId String?       @unique
+  razorpayLinkId    String?       @unique
+  collectedById     String?
+  note              String        @default("")
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+
+  @@index([gymId, paidAt])
+  @@index([gymId, athleteId])
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  gymId          String
+  athleteId      String
+  paymentId      String   @unique
+  number         String
+  financialYear  String
+  sequence       Int
+  taxablePaise   Int
+  cgstPaise      Int
+  sgstPaise      Int
+  igstPaise      Int      @default(0)
+  totalPaise     Int
+  lineItems      Json
+  issuedAt       DateTime @default(now())
+
+  @@unique([gymId, number])
+  @@unique([gymId, financialYear, sequence])
+  @@index([gymId, issuedAt])
+}
+
+model InvoiceCounter {
+  id            String @id @default(cuid())
+  gymId         String
+  financialYear String
+  lastSequence  Int    @default(0)
+
+  @@unique([gymId, financialYear])
+}
+
+model Due {
+  id             String    @id @default(cuid())
+  gymId          String
+  athleteId      String
+  membershipId   String?
+  amountPaise    Int
+  dueDate        DateTime  @db.Date
+  status         DueStatus @default(OPEN)
+  reminderStage  Int       @default(0)
+  lastRemindedAt DateTime?
+  paymentLinkId  String?
+  paymentLinkUrl String?
+  paidAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([gymId, status, dueDate])
+  @@index([gymId, athleteId])
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  gymId       String
+  branchId    String?
+  category    ExpenseCategory
+  amountPaise Int
+  spentOn     DateTime        @db.Date
+  note        String          @default("")
+  createdById String
+  createdAt   DateTime        @default(now())
+
+  @@index([gymId, spentOn])
+}
+
+// ---------------------------------------------------------------------------
+// Attendance, slots, occupancy
+// ---------------------------------------------------------------------------
+
+model CheckIn {
+  id           String        @id @default(cuid())
+  gymId        String
+  branchId     String
+  branch       Branch        @relation(fields: [branchId], references: [id])
+  athleteId    String
+  method       CheckInMethod
+  checkedInAt  DateTime      @default(now())
+  checkedOutAt DateTime?
+  autoCheckout Boolean       @default(false)
+  recordedById String?
+  deviceId     String?
+  externalRef  String?
+
+  @@unique([gymId, externalRef])
+  @@index([gymId, branchId, checkedInAt])
+  @@index([gymId, athleteId, checkedInAt])
+}
+
+// Biometric readers / turnstiles that push punches to Kasrat.
+// kind API: generic JSON push with a bearer key (keyHash stored, shown once).
+// kind ADMS: ZKTeco / eSSL "push" protocol, identified by serialNumber.
+model AttendanceDevice {
+  id           String    @id @default(cuid())
+  gymId        String
+  branchId     String
+  name         String
+  kind         String    @default("API")
+  vendor       String    @default("")
+  serialNumber String?   @unique
+  keyPrefix    String?   @unique
+  keyHash      String?
+  allowedIps   String[]
+  active       Boolean   @default(true)
+  lastSeenAt   DateTime?
+  lastPunchAt  DateTime?
+  punches      Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  @@index([gymId])
+}
+
+model QrNonce {
+  id        String   @id @default(cuid())
+  gymId     String
+  nonce     String
+  expiresAt DateTime
+
+  @@unique([gymId, nonce])
+  @@index([expiresAt])
+}
+
+model Slot {
+  id        String   @id @default(cuid())
+  gymId     String
+  branchId  String
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  date      DateTime @db.Date
+  startHour Int
+  capacity  Int
+  booked    Int      @default(0)
+
+  @@unique([gymId, branchId, date, startHour])
+  @@index([gymId, date])
+}
+
+model SlotBooking {
+  id          String    @id @default(cuid())
+  gymId       String
+  slotId      String
+  athleteId   String
+  status      String    @default("BOOKED")
+  remindedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([slotId, athleteId])
+  @@index([gymId, athleteId])
+}
+
+model PeakHourStat {
+  id          String   @id @default(cuid())
+  gymId       String
+  branchId    String
+  weekday     Int
+  hour        Int
+  planned     Int      @default(0)
+  actual      Int      @default(0)
+  weekOf      DateTime @db.Date
+
+  @@unique([gymId, branchId, weekOf, weekday, hour])
+  @@index([gymId, branchId, weekOf])
+}
+
+// ---------------------------------------------------------------------------
+// Reminders, messaging, notifications
+// ---------------------------------------------------------------------------
+
+model ReminderStage {
+  id          String   @id @default(cuid())
+  gymId       String
+  stage       Int
+  name        String
+  offsetDays  Int
+  template    String
+  customText  String?
+  notifyOwner Boolean  @default(false)
+  enabled     Boolean  @default(true)
+
+  @@unique([gymId, stage])
+}
+
+model MessageLog {
+  id            String         @id @default(cuid())
+  gymId         String
+  athleteId     String?
+  staffId       String?
+  channel       MessageChannel
+  template      String
+  language      Language       @default(EN)
+  purpose       String
+  dedupeKey     String?
+  critical      Boolean        @default(false)
+  toPhone       String?
+  body          String?
+  status        MessageStatus  @default(QUEUED)
+  providerId    String?        @unique
+  error         String?
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  readAt        DateTime?
+  createdAt     DateTime       @default(now())
+
+  @@unique([gymId, dedupeKey])
+  @@index([gymId, createdAt])
+  @@index([gymId, purpose, createdAt])
+}
+
+model WhatsAppUsage {
+  id        String  @id @default(cuid())
+  gymId     String
+  month     String
+  sent      Int     @default(0)
+  blocked   Int     @default(0)
+  warned80  Boolean @default(false)
+  warned100 Boolean @default(false)
+
+  @@unique([gymId, month])
+}
+
+model Notification {
+  id            String        @id @default(cuid())
+  gymId         String
+  recipientType PrincipalType
+  recipientId   String
+  title         String
+  body          String
+  href          String?
+  readAt        DateTime?
+  createdAt     DateTime      @default(now())
+
+  @@index([gymId, recipientType, recipientId, readAt])
+}
+
+model Announcement {
+  id         String    @id @default(cuid())
+  gymId      String
+  branchId   String?
+  title      String
+  body       String
+  pinned     Boolean   @default(false)
+  expiresAt  DateTime?
+  pushed     Int       @default(0)
+  createdById String
+  createdAt  DateTime  @default(now())
+
+  @@index([gymId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Growth: leads, risk, referrals, challenges, badges, motivation
+// ---------------------------------------------------------------------------
+
+model Lead {
+  id             String     @id @default(cuid())
+  gymId          String
+  branchId       String?
+  name           String
+  phone          String
+  source         LeadSource
+  stage          LeadStage  @default(NEW)
+  interest       String     @default("")
+  nextFollowUpAt DateTime?
+  assignedToId   String?
+  convertedAthleteId String?
+  referrerId     String?
+  lostReason     String?
+  notes          String     @default("")
+  lastContactAt  DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([gymId, stage])
+  @@index([gymId, nextFollowUpAt])
+}
+
+model RiskScore {
+  id          String             @id @default(cuid())
+  gymId       String
+  athleteId   String
+  weekOf      DateTime           @db.Date
+  score       Int
+  reasons     String[]
+  contacted   Boolean            @default(false)
+  outcome     RiskContactOutcome @default(PENDING)
+  contactedById String?
+  contactedAt DateTime?
+  note        String?
+  createdAt   DateTime           @default(now())
+
+  @@unique([gymId, athleteId, weekOf])
+  @@index([gymId, weekOf, score])
+}
+
+model Referral {
+  id              String    @id @default(cuid())
+  gymId           String
+  referrerId      String
+  referredAthleteId String?
+  referredLeadId  String?
+  rewardDays      Int
+  rewardedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([gymId, referrerId])
+}
+
+model Challenge {
+  id          String   @id @default(cuid())
+  gymId       String
+  title       String
+  description String   @default("")
+  metric      String
+  target      Int
+  startsAt    DateTime @db.Date
+  endsAt      DateTime @db.Date
+  badgeKey    String?
+  createdAt   DateTime @default(now())
+
+  @@index([gymId, endsAt])
+}
+
+model ChallengeEntry {
+  id          String    @id @default(cuid())
+  gymId       String
+  challengeId String
+  athleteId   String
+  progress    Int       @default(0)
+  completedAt DateTime?
+
+  @@unique([challengeId, athleteId])
+  @@index([gymId])
+}
+
+model BadgeRule {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String
+  icon        String
+  metric      String
+  threshold   Int
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model AthleteBadge {
+  id        String   @id @default(cuid())
+  gymId     String
+  athleteId String
+  badgeKey  String
+  earnedAt  DateTime @default(now())
+
+  @@unique([athleteId, badgeKey])
+  @@index([gymId])
+}
+
+model MotivationLine {
+  id        String   @id @default(cuid())
+  gymId     String
+  athleteId String
+  date      DateTime @db.Date
+  language  Language
+  text      String
+  source    String   @default("groq")
+
+  @@unique([athleteId, date])
+  @@index([gymId, date])
+}
+
+model Complaint {
+  id           String          @id @default(cuid())
+  gymId        String
+  branchId     String?
+  athleteId    String?
+  kind         ComplaintKind
+  title        String
+  body         String
+  photoPublicId String?
+  status       ComplaintStatus @default(OPEN)
+  resolvedById String?
+  resolvedAt   DateTime?
+  resolutionNote String?
+  createdAt    DateTime        @default(now())
+
+  @@index([gymId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Training and progress
+// ---------------------------------------------------------------------------
+
+model WorkoutSplit {
+  id          String   @id @default(cuid())
+  gymId       String
+  athleteId   String
+  createdById String?
+  days        Json
+  dietNotes   String   @default("")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([gymId, athleteId])
+}
+
+model TrainerNote {
+  id        String   @id @default(cuid())
+  gymId     String
+  athleteId String
+  trainerId String
+  trainer   GymUser  @relation(fields: [trainerId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([gymId, athleteId])
+}
+
+model PtSession {
+  id           String    @id @default(cuid())
+  gymId        String
+  athleteId    String
+  trainerId    String
+  trainer      GymUser   @relation(fields: [trainerId], references: [id])
+  sessionAt    DateTime
+  durationMin  Int       @default(60)
+  notes        String    @default("")
+  athleteSignedAt DateTime?
+  athleteDisputedAt DateTime?
+  disputeNote  String?
+  commissionPaise Int    @default(0)
+  createdAt    DateTime  @default(now())
+
+  @@index([gymId, trainerId, sessionAt])
+  @@index([gymId, athleteId])
+}
+
+model ProgressLog {
+  id         String   @id @default(cuid())
+  gymId      String
+  athleteId  String
+  loggedOn   DateTime @db.Date
+  weightKg   Float?
+  chestCm    Float?
+  waistCm    Float?
+  hipsCm     Float?
+  armsCm     Float?
+  thighsCm   Float?
+  bodyFatPct Float?
+  createdAt  DateTime @default(now())
+
+  @@unique([athleteId, loggedOn])
+  @@index([gymId, athleteId])
+}
+
+model ProgressPhoto {
+  id        String   @id @default(cuid())
+  gymId     String
+  athleteId String
+  publicId  String
+  takenOn   DateTime @db.Date
+  pose      String   @default("front")
+  createdAt DateTime @default(now())
+
+  @@index([gymId, athleteId])
+}
+
+model PersonalRecord {
+  id        String   @id @default(cuid())
+  gymId     String
+  athleteId String
+  exercise  String
+  weightKg  Float
+  reps      Int      @default(1)
+  achievedOn DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@index([gymId, athleteId, exercise])
+}
+
+// ---------------------------------------------------------------------------
+// Health sync
+// ---------------------------------------------------------------------------
+
+// Health sync (Health Connect / Apple Health) is postponed. These tables are
+// kept so it can be added later without a data change; nothing reads or
+// writes them yet, and the `health_sync` feature is shown as coming soon.
+model HealthConsent {
+  id        String           @id @default(cuid())
+  gymId     String
+  athleteId String
+  type      HealthMetricType
+  granted   Boolean          @default(false)
+  shareWithStaff Boolean     @default(false)
+  updatedAt DateTime         @updatedAt
+
+  @@unique([athleteId, type])
+  @@index([gymId])
+}
+
+model HealthConnection {
+  id            String       @id @default(cuid())
+  gymId         String
+  athleteId     String
+  source        HealthSource
+  externalUserId String?
+  connectedAt   DateTime     @default(now())
+  disconnectedAt DateTime?
+
+  @@unique([athleteId, source])
+  @@index([externalUserId])
+}
+
+model HealthMetric {
+  id         String           @id @default(cuid())
+  gymId      String
+  athleteId  String
+  type       HealthMetricType
+  value      Float
+  unit       String
+  source     HealthSource
+  recordedAt DateTime
+  createdAt  DateTime         @default(now())
+
+  @@unique([athleteId, type, source, recordedAt])
+  @@index([gymId, athleteId, type, recordedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Auth, rate limits, webhooks - infrastructure
+// ---------------------------------------------------------------------------
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  scope      OtpScope
+  phone      String
+  gymId      String?
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, scope, createdAt])
+}
+
+model RefreshToken {
+  id            String        @id @default(cuid())
+  familyId      String
+  tokenHash     String        @unique
+  principalType PrincipalType
+  principalId   String
+  gymId         String?
+  userAgent     String?
+  ip            String?
+  expiresAt     DateTime
+  usedAt        DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime      @default(now())
+
+  @@index([familyId])
+  @@index([principalType, principalId])
+  @@index([gymId])
+}
+
+model RateLimitHit {
+  key         String
+  windowStart DateTime
+  count       Int      @default(1)
+
+  @@id([key, windowStart])
+  @@index([windowStart])
+}
+
+// Once-per-period marker for scheduled jobs (key like "dues:<gymId>:2026-11-10").
+// Lets the same cron route run hourly or daily without double work.
+// Member says "I've paid" by UPI: the desk confirms against the bank app,
+// which records the payment (and GST invoice) like a desk collection.
+model MemberPaymentClaim {
+  id            String      @id @default(cuid())
+  gymId         String
+  athleteId     String
+  kind          String
+  dueId         String?
+  planId        String?
+  discountPaise Int         @default(0)
+  amountPaise   Int
+  utr           String
+  note          String      @default("")
+  status        ClaimStatus @default(PENDING)
+  decidedById   String?
+  decidedAt     DateTime?
+  decision      String?
+  paymentId     String?
+  createdAt     DateTime    @default(now())
+
+  @@unique([gymId, utr])
+  @@index([gymId, status])
+  @@index([gymId, athleteId])
+}
+
+// Web push (athlete PWA). One row per device/browser.
+model PushSubscription {
+  id         String    @id @default(cuid())
+  gymId      String
+  athleteId  String
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  userAgent  String    @default("")
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@index([gymId, athleteId])
+}
+
+// Reusable weekly split + diet notes a trainer can apply to many members.
+model WorkoutTemplate {
+  id          String   @id @default(cuid())
+  gymId       String
+  createdById String
+  name        String
+  goal        String   @default("")
+  days        Json
+  dietNotes   String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([gymId, createdById])
+}
+
+model JobRun {
+  key    String   @id
+  ranAt  DateTime @default(now())
+}
+
+model WebhookEvent {
+  id         String   @id @default(cuid())
+  provider   String
+  eventId    String
+  type       String
+  payload    Json
+  processedAt DateTime?
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@unique([provider, eventId])
+}

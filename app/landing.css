@@ -1,0 +1,200 @@
+/* =====================================================================
+   Rep+ landing page.
+   Display type: Big Shoulders Display (athletic signage, variable weight).
+   The one big moment: the headline "flexes" from thin to heavy on load,
+   over a floor grid that runs like a treadmill belt. The live console and
+   the day timeline are the only other motion. All of it switches off with
+   prefers-reduced-motion.
+   ===================================================================== */
+
+.lp {
+  --lp-ink: #18211e;
+  --lp-ink-2: #222d29;
+  --lp-lime: #d5f36a;
+  --lp-sky: #79c9f5;
+  --lp-orange: #ff9c5d;
+  --lp-paper: #f3f5ee;
+  --lp-mist: #9ba69d;
+  --lp-display: 'Big Shoulders Display Variable', 'Arial Narrow', Arial, sans-serif;
+  background: var(--lp-paper);
+  color: var(--lp-ink);
+  overflow-x: clip;
+}
+
+.lp-wrap { width: min(1180px, 100% - 40px); margin: 0 auto; }
+
+/* ---------------------------------------------------------------- buttons */
+.lp-btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 20px; border-radius: 12px; font-weight: 800; font-size: 14px; text-decoration: none; border: 1px solid transparent; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.lp-btn svg { width: 17px; height: 17px; transition: transform .18s ease; }
+.lp-btn:hover { transform: translateY(-2px); }
+.lp-btn:hover svg:last-child { transform: translateX(3px); }
+.lp-btn:active { transform: translateY(0); }
+.lp-btn:focus-visible { outline: 3px solid var(--lp-sky); outline-offset: 3px; }
+.lp-btn-lime { background: var(--lp-lime); color: var(--lp-ink); box-shadow: 0 0 0 0 #d5f36a00; }
+.lp-btn-lime:hover { box-shadow: 0 10px 30px -8px #d5f36a99; }
+.lp-btn-ghost { color: #fff; border-color: #ffffff2e; background: #ffffff08; }
+.lp-btn-ghost:hover { border-color: #ffffff66; }
+.lp-btn-sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 10px; }
+
+/* ---------------------------------------------------------------- hero */
+.lp-hero { position: relative; background: radial-gradient(120% 90% at 85% 0%, #2b3a2f 0%, var(--lp-ink) 55%); color: #fff; padding-bottom: 96px; isolation: isolate; overflow: hidden; }
+
+/* Treadmill floor: a grid in perspective, sliding toward the viewer. */
+.lp-floor { position: absolute; z-index: -1; left: -40%; right: -40%; bottom: -8%; height: 62%; background-image: linear-gradient(#d5f36a26 1px, transparent 1px), linear-gradient(90deg, #d5f36a1c 1px, transparent 1px); background-size: 72px 72px; transform: perspective(520px) rotateX(64deg); transform-origin: 50% 0; mask-image: linear-gradient(to bottom, transparent 0%, #000 45%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 45%); animation: lp-belt 1.6s linear infinite; }
+.lp-floor-slow { animation-duration: 4s; opacity: .7; }
+@keyframes lp-belt { to { background-position: 0 72px, 0 0; } }
+
+.lp-glow { position: absolute; z-index: -1; width: 640px; height: 640px; right: -160px; top: -220px; border-radius: 50%; background: radial-gradient(circle, #d5f36a33 0%, transparent 62%); filter: blur(10px); animation: lp-breathe 7s ease-in-out infinite; }
+@keyframes lp-breathe { 50% { transform: scale(1.12); opacity: .7; } }
+
+.lp-nav { display: flex; justify-content: space-between; align-items: center; padding: 26px 0 0; }
+.lp-nav .brand { padding: 0; color: #fff; }
+.lp-nav nav { display: flex; flex-direction: row; padding: 0; gap: 22px; align-items: center; font-size: 14px; font-weight: 700; }
+.lp-nav nav a:not(.lp-btn) { color: #c9d4c3; text-decoration: none; }
+.lp-nav nav a:not(.lp-btn):hover { color: #fff; }
+
+.lp-hero-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 56px; align-items: center; padding-top: 72px; }
+.lp-where { color: var(--lp-mist); font-size: 14px; margin: 0 0 18px; display: flex; gap: 10px; align-items: center; }
+.lp-where::before { content: ''; width: 28px; height: 2px; background: var(--lp-lime); border-radius: 2px; }
+
+/* The headline flexes: each line rises out of its mask while the variable
+   weight goes from thin to black, like a muscle tightening. */
+.lp-title { font-family: var(--lp-display); font-size: clamp(60px, 8vw, 116px); line-height: .86; letter-spacing: -.5px; text-transform: uppercase; margin: 0; font-weight: 850; }
+.lp-line { display: block; overflow: hidden; padding-bottom: .04em; }
+.lp-line > span { display: inline-block; animation: lp-rise .9s cubic-bezier(.2, .85, .25, 1) both, lp-flex 1.3s cubic-bezier(.5, 0, .2, 1) both; }
+.lp-line-lime { color: var(--lp-lime); }
+.lp-line-lime > span { animation-delay: .16s, .3s; }
+@keyframes lp-rise { from { transform: translateY(105%); } to { transform: translateY(0); } }
+@keyframes lp-flex { 0% { font-weight: 200; letter-spacing: 6px; } 70% { font-weight: 900; letter-spacing: -1.5px; } 100% { font-weight: 850; letter-spacing: -.5px; } }
+
+.lp-lede { color: #c9d4c3; font-size: 18px; line-height: 1.6; max-width: 31em; margin: 26px 0 0; animation: lp-fade .8s .55s both; }
+.lp-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; animation: lp-fade .8s .7s both; }
+@keyframes lp-fade { from { opacity: 0; transform: translateY(10px); } }
+
+/* ---------------------------------------------------------------- live console */
+.lp-hero-live { perspective: 1200px; }
+.lp-console { background: linear-gradient(160deg, #ffffff12, #ffffff05); border: 1px solid #ffffff1f; border-radius: 26px; padding: 20px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 40px 80px -30px #000c, inset 0 1px 0 #ffffff1a; animation: lp-console-in 1.1s .45s cubic-bezier(.2, .85, .25, 1) both; }
+@keyframes lp-console-in { from { opacity: 0; transform: translateY(40px) rotateX(14deg) rotateY(-8deg); } }
+
+.lp-console-head { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #c9d4c3; font-weight: 700; }
+.lp-console-time { margin-left: auto; color: var(--lp-mist); font-variant-numeric: tabular-nums; }
+.lp-pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--lp-lime); position: relative; }
+.lp-pulse::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--lp-lime); animation: lp-ping 1.8s cubic-bezier(0, 0, .2, 1) infinite; }
+@keyframes lp-ping { 75%, 100% { transform: scale(3); opacity: 0; } }
+
+.lp-console-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+
+.lp-gauge { position: relative; background: #00000033; border: 1px solid #ffffff12; border-radius: 18px; padding: 14px 14px 12px; text-align: center; }
+.lp-gauge svg { width: 100%; max-width: 150px; display: block; margin: 0 auto; transform: rotate(135deg); }
+.lp-gauge circle { fill: none; stroke-width: 10; stroke-linecap: round; }
+.lp-gauge-track { stroke: #ffffff14; }
+.lp-gauge-fill { stroke: var(--lp-lime); transition: stroke-dashoffset 1.2s cubic-bezier(.3, .8, .3, 1); filter: drop-shadow(0 0 6px #d5f36a88); }
+.lp-gauge-value { position: absolute; left: 0; right: 0; top: 50px; }
+.lp-gauge-value strong { display: block; font-family: var(--lp-display); font-size: 40px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.lp-gauge-value small { color: var(--lp-mist); font-size: 11px; }
+.lp-gauge-note { margin: 2px 0 0; font-size: 12px; color: #c9d4c3; }
+
+.lp-qr { position: relative; background: #00000033; border: 1px solid #ffffff12; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; overflow: hidden; }
+.lp-qr-code { width: 100%; max-width: 132px; background: #fff; padding: 8px; border-radius: 10px; fill: var(--lp-ink); animation: lp-qr-in .5s steps(5) both; }
+@keyframes lp-qr-in { from { opacity: .15; filter: blur(2px); } }
+.lp-qr-scan { position: absolute; left: 10%; right: 10%; top: 14px; height: 2px; background: var(--lp-lime); box-shadow: 0 0 14px 3px #d5f36aaa; border-radius: 2px; animation: lp-scan 1.1s ease-in-out both; opacity: 0; }
+@keyframes lp-scan { 0% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; } 100% { opacity: 0; transform: translateY(132px); } }
+.lp-qr p { margin: 0; font-size: 12px; color: #c9d4c3; text-align: center; line-height: 1.35; }
+.lp-qr p strong { color: #fff; font-variant-numeric: tabular-nums; }
+.lp-qr p small { display: block; color: var(--lp-mist); font-size: 11px; }
+
+.lp-feed-head { display: flex; justify-content: space-between; margin: 18px 2px 8px; font-size: 12px; color: var(--lp-mist); }
+.lp-feed-head strong { color: #fff; font-variant-numeric: tabular-nums; }
+.lp-feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lp-feed-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #ffffff08; font-size: 13px; color: #c9d4c3; }
+.lp-feed-row strong { color: #fff; font-weight: 700; }
+.lp-feed-row > svg { width: 16px; height: 16px; flex: none; color: var(--lp-lime); }
+.lp-feed-row.tone-sky > svg { color: var(--lp-sky); }
+.lp-feed-row.tone-orange > svg { color: var(--lp-orange); }
+.lp-feed-row span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lp-feed-row small { color: var(--lp-mist); font-size: 11px; font-variant-numeric: tabular-nums; }
+.lp-feed-row:nth-child(3) { opacity: .7; }
+.lp-feed-row:nth-child(4) { opacity: .4; }
+.lp-feed-row.is-new { animation: lp-row-in .55s cubic-bezier(.2, .85, .25, 1) both; }
+@keyframes lp-row-in { from { opacity: 0; transform: translateY(-14px); background: #d5f36a33; } }
+
+/* ---------------------------------------------------------------- sections */
+.lp-section { padding: 96px 0 0; }
+.lp-head { max-width: 640px; margin-bottom: 40px; }
+.lp-head h2 { font-family: var(--lp-display); font-size: clamp(40px, 5vw, 64px); line-height: .95; font-weight: 800; text-transform: uppercase; margin: 0; letter-spacing: -.3px; }
+.lp-head p { color: #5f6a62; font-size: 16px; margin: 12px 0 0; line-height: 1.55; }
+
+/* A day at your gym: horizontal on desktop, a rail that fills on scroll. */
+.lp-day { --p: 1; position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 22px; }
+.lp-day-rail { position: absolute; left: 7px; right: calc(20% - 15px); top: 7px; height: 3px; background: #dfe5d8; border-radius: 3px; overflow: hidden; }
+.lp-day-rail span { display: block; height: 100%; width: calc(var(--p) * 100%); background: linear-gradient(90deg, #a9cb35, var(--lp-lime)); border-radius: 3px; transition: width .12s linear; }
+.lp-day li { position: relative; padding-top: 34px; opacity: .42; transform: translateY(8px); transition: opacity .5s ease, transform .5s ease; }
+.lp-day li.lit { opacity: 1; transform: none; }
+.lp-day-dot { position: absolute; top: 0; left: 0; width: 17px; height: 17px; border-radius: 50%; background: var(--lp-paper); border: 3px solid #cdd5c6; transition: border-color .4s ease, background .4s ease, box-shadow .4s ease; }
+.lp-day li.lit .lp-day-dot { border-color: var(--lp-ink); background: var(--lp-lime); box-shadow: 0 0 0 6px #d5f36a55; }
+.lp-day time { display: block; font-family: var(--lp-display); font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.lp-day h3 { font-size: 16px; margin: 10px 0 6px; }
+.lp-day p { font-size: 14px; color: #5f6a62; line-height: 1.55; margin: 0; }
+
+/* What comes off your plate: a quiet two-column list. */
+.lp-plate { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; }
+.lp-plate li { display: flex; gap: 16px; padding: 22px 0; border-top: 1px solid #dfe5d8; }
+.lp-plate li > svg { flex: none; width: 22px; height: 22px; color: #7f9e1f; margin-top: 2px; }
+.lp-plate h3 { margin: 0 0 6px; font-size: 17px; }
+.lp-plate p { margin: 0; color: #5f6a62; font-size: 14px; line-height: 1.6; max-width: 36em; }
+
+/* Pricing cards come from components/landing/pricing.tsx. */
+.lp .price-card { transition: transform .25s ease, box-shadow .25s ease; }
+.lp .price-card:hover { transform: translateY(-4px); box-shadow: 0 24px 48px -28px #18211e66; }
+.lp .price-card .amount { font-family: var(--lp-display); font-size: 54px; letter-spacing: 0; }
+.lp .price-card .amount small { font-family: Arial, Helvetica, sans-serif; }
+
+/* ---------------------------------------------------------------- final */
+.lp-final { position: relative; isolation: isolate; overflow: hidden; margin-top: 110px; background: var(--lp-ink); color: #fff; padding: 96px 0 110px; text-align: center; }
+.lp-final h2 { font-family: var(--lp-display); text-transform: uppercase; font-size: clamp(44px, 6vw, 84px); line-height: .92; margin: 0; font-weight: 850; }
+.lp-final p { color: #c9d4c3; font-size: 16px; margin: 16px auto 0; max-width: 34em; }
+.lp-final .lp-cta { justify-content: center; animation: none; }
+.lp-final .lp-floor { height: 80%; }
+
+.lp-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 28px 0 40px; font-size: 13px; color: #5f6a62; }
+.lp-foot span { display: flex; gap: 18px; }
+.lp-foot a { color: var(--lp-ink); }
+
+/* ---------------------------------------------------------------- responsive */
+@media (max-width: 980px) {
+  .lp-hero-grid { grid-template-columns: 1fr; gap: 44px; padding-top: 48px; }
+  .lp-day { grid-template-columns: 1fr; gap: 26px; padding-left: 34px; }
+  .lp-day-rail { left: 7px; right: auto; top: 8px; bottom: 8px; width: 3px; height: auto; }
+  .lp-day-rail span { width: 100%; height: calc(var(--p) * 100%); transition: height .12s linear; }
+  .lp-day li { padding-top: 0; }
+  .lp-day-dot { left: -34px; top: 6px; }
+  .lp-plate { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .lp-nav nav { gap: 14px; }
+  .lp-nav nav a[href='#pricing'] { display: none; }
+  .lp-lede { font-size: 16px; }
+  .lp-console { padding: 14px; border-radius: 22px; }
+  .lp-gauge-value { top: 40px; }
+  .lp-gauge-value strong { font-size: 32px; }
+  .lp-section { padding-top: 72px; }
+}
+
+/* ---------------------------------------------------------------- reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .lp *, .lp *::before, .lp *::after { animation: none !important; transition: none !important; }
+  .lp-day li { opacity: 1; transform: none; }
+}
+
+/* ---------------------------------------------------------------- night mode */
+[data-theme='dark'] .lp { --lp-paper: #0b110f; background: #0b110f; color: #e8efe3; }
+[data-theme='dark'] .lp-head p, [data-theme='dark'] .lp-day p, [data-theme='dark'] .lp-plate p, [data-theme='dark'] .lp-foot { color: #a9b6ab; }
+[data-theme='dark'] .lp-day-rail { background: #1f2a25; }
+[data-theme='dark'] .lp-day-dot { background: #0b110f; border-color: #33423b; }
+[data-theme='dark'] .lp-day li.lit .lp-day-dot { border-color: #d5f36a; }
+[data-theme='dark'] .lp-plate li { border-top-color: #1f2a25; }
+[data-theme='dark'] .lp-plate li > svg { color: var(--lp-lime); }
+[data-theme='dark'] .lp-foot a { color: #e8efe3; }
+[data-theme='dark'] .lp-final { background: radial-gradient(90% 120% at 50% 0%, #1d2b18, #070b0a); }
+[data-theme='dark'] .lp .price-card { background: #121a17; border-color: #24302b; color: #e8efe3; }
+[data-theme='dark'] .lp .price-card.popular { background: #0f1714; box-shadow: inset 0 0 0 1px #d5f36a55, 0 0 60px -30px #d5f36a; }

@@ -1,0 +1,269 @@
+/* =====================================================================
+   Rep+ themes: day and night.
+
+   globals.css uses these tokens instead of fixed colours. Day keeps the
+   original look; night is a deep green-black "gym after hours" with neon
+   lime edges. <html data-theme> is set before paint (components/theme).
+   The landing page always stays in day colours.
+   ===================================================================== */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --background: #f3f5ee;
+  --foreground: #17201d;
+  --card: #ffffff;
+  --surface: #ffffff;
+  --field: #fbfcf8;
+  --soft: #f4f6ef;
+  --soft-2: #eaf0e5;
+  --line: #dfe5d8;
+  --line-soft: #edf0e9;
+  --line-strong: #cfd8c6;
+  --muted: #77817a;
+  --text: #18211e;
+  --text-2: #58635b;
+  --text-3: #8b968c;
+  --lime-text: #6c8a1d;
+  --orange-text: #b9622a;
+  --red-text: #a33424;
+  --lime-soft: #f3f9df;
+  --orange-soft: #fff0e5;
+  --red-soft: #fde8e4;
+  --yellow-soft: #fdf5d8;
+  --purple-soft: #f6e9f8;
+
+  --edge-1: #ffffff;
+  --edge-2: #dfe6d5;
+  --card-shadow: 0 1px 0 #ffffff inset, 0 14px 34px -26px #18211e59;
+  --chart-bar: #c7d2c3;
+  --chart-grid: #edf0e9;
+  --heat-0: #eef1ea;
+  --k-dot: #18211e14;
+  --k-glow: #d5f36a42;
+  --k-mesh: radial-gradient(900px 520px at 100% -10%, #e4f4a8 0%, transparent 62%), radial-gradient(760px 520px at 18% 110%, #d9eef7 0%, transparent 60%), linear-gradient(180deg, #f5f7f0 0%, #eef2e7 100%);
+  --gym-ink: #18211e;
+  --gym-opacity: .09;
+  --floor-line: #18211e1c;
+  --floor-line-2: #18211e12;
+  --floor-glow: #d5f36a55;
+  --topbar-bg: #f3f5eebf;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #0b110f;
+  --foreground: #e8efe3;
+  --card: #121a17;
+  --surface: #121a17;
+  --field: #0e1513;
+  --soft: #18221e;
+  --soft-2: #1f2a26;
+  --line: #24302b;
+  --line-soft: #1b2521;
+  --line-strong: #34433c;
+  --muted: #8e9b91;
+  --text: #e8efe3;
+  --text-2: #b4c1b6;
+  --text-3: #7e8b82;
+  --lime-text: #d5f36a;
+  --orange-text: #ffb27f;
+  --red-text: #ff9c8c;
+  --lime-soft: #d5f36a17;
+  --orange-soft: #ff9c5d1f;
+  --red-soft: #ff6b5b21;
+  --yellow-soft: #f5d24a1c;
+  --purple-soft: #c792ea21;
+
+  --edge-1: #d5f36a33;
+  --edge-2: #ffffff08;
+  --card-shadow: 0 1px 0 #ffffff0a inset, 0 24px 48px -28px #000000;
+  --chart-bar: #2e3c35;
+  --chart-grid: #1c2621;
+  --heat-0: #18221e;
+  --k-dot: #d5f36a14;
+  --k-glow: #d5f36a26;
+  --k-mesh: radial-gradient(900px 560px at 100% -10%, #2b4a1c66 0%, transparent 62%), radial-gradient(760px 520px at 15% 110%, #123a3a55 0%, transparent 60%), linear-gradient(180deg, #0c1311 0%, #090e0c 100%);
+  --gym-ink: #d5f36a;
+  --gym-opacity: .12;
+  --floor-line: #d5f36a2e;
+  --floor-line-2: #d5f36a1f;
+  --floor-glow: #d5f36a26;
+  --topbar-bg: #0b110fb8;
+}
+
+/* Smooth cross-fade only while the switch is pressed. */
+.k-theme-switching, .k-theme-switching *, .k-theme-switching *::before, .k-theme-switching *::after { transition: background-color .4s ease, color .4s ease, border-color .4s ease, fill .4s ease, stroke .4s ease !important; }
+
+
+body { background: var(--background); color: var(--text); }
+
+/* Sidebar width, so fixed backdrops start after it. */
+:root { --k-side: 248px; }
+@media (max-width: 1000px) { :root { --k-side: 215px; } }
+@media (max-width: 700px) { :root { --k-side: 0px; } }
+.app-main::before { left: var(--k-side) !important; }
+
+/* ---------------------------------------------------------------- main area */
+.kasrat-app { background: var(--background); }
+.app-main { background: var(--k-mesh); background-attachment: fixed; color: var(--text); }
+
+.topbar { position: sticky; top: 0; z-index: 8; background: var(--topbar-bg); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); border-bottom-color: var(--line); }
+.topbar h2 { font-family: 'Big Shoulders Display Variable', 'Arial Narrow', Arial, sans-serif; font-weight: 800; font-size: 30px; letter-spacing: .2px; text-transform: uppercase; line-height: 1; }
+.top-kicker { color: var(--text-3); }
+.icon-button, .mobile-menu { color: var(--text-2); border-radius: 10px; }
+.icon-button:hover { background: var(--soft); color: var(--text); }
+
+/* Cards: a light edge on top (day) or a lime rim (night) instead of a flat border. */
+:is(.panel, .metric-card, .a-card, .table-wrap, .roster-card, .template-card, .lead-card, .risk-card, .stage-list):not(:is(.coach-note, .plan-hero, .pt-confirm, .hero-card, .empty-panel.dark)) {
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(165deg, var(--edge-1), var(--edge-2) 55%) border-box;
+  border: 1px solid transparent;
+  box-shadow: var(--card-shadow);
+}
+.metric-copy strong, .pulse-number, .stat-grid strong, .aging-grid strong { font-family: 'Big Shoulders Display Variable', 'Arial Narrow', Arial, sans-serif; font-weight: 800; letter-spacing: .3px; }
+.metric-copy strong { font-size: 34px; line-height: 1; }
+.pulse-number { font-size: 84px; letter-spacing: 0; line-height: .9; }
+.hero-card h1 { font-family: 'Big Shoulders Display Variable', 'Arial Narrow', Arial, sans-serif; font-weight: 800; letter-spacing: 0; font-size: 58px; line-height: .92; }
+@media (max-width: 700px) { .hero-card h1 { font-size: 46px; } .topbar h2 { font-size: 24px; } }
+
+.data-table thead th { background: var(--soft); color: var(--text-3); }
+.data-table td { border-color: var(--line-soft); }
+.data-table tbody tr { transition: background .15s ease; }
+.data-table tbody tr:hover { background: var(--lime-soft); }
+
+.bar { background: var(--chart-bar); }
+.bar-active { background: var(--lime); }
+.bar-chart { background: repeating-linear-gradient(to bottom, transparent 0 32px, var(--chart-grid) 33px 34px); }
+.heat-cell { background: var(--heat-0); }
+
+.kicker { color: var(--text-3); }
+.muted, .hint { color: var(--muted); }
+
+/* ---------------------------------------------------------------- night extras */
+[data-theme='dark'] .sidebar { background-color: #060a09; border-right: 1px solid #ffffff0a; }
+[data-theme='dark'] .tabbar { background: #060a09ee; border-top: 1px solid #d5f36a22; backdrop-filter: blur(12px); }
+[data-theme='dark'] .hero-card { background: radial-gradient(120% 140% at 85% 0%, #24381c 0%, #0f1714 55%); box-shadow: inset 0 0 0 1px #d5f36a26, 0 30px 60px -30px #000; }
+[data-theme='dark'] .price-card.popular { background: #0f1714; box-shadow: inset 0 0 0 1px #d5f36a40; }
+[data-theme='dark'] .btn-dark, [data-theme='dark'] .dark-button { background: var(--text) !important; color: #0b110f !important; }
+[data-theme='dark'] .btn-outline { background: var(--soft); border-color: var(--line-strong); color: var(--text); }
+[data-theme='dark'] .btn-ghost { color: var(--text-2); }
+[data-theme='dark'] .btn-ghost:hover { background: var(--soft); }
+[data-theme='dark'] :is(input, select, textarea) { color: var(--text); }
+[data-theme='dark'] :is(input, textarea)::placeholder { color: #5f6c63; }
+[data-theme='dark'] .status-banner.trial { background: #d5f36a12; border-color: #d5f36a33; color: #e2f5a2; }
+[data-theme='dark'] .status-banner { background: #ff9c5d14; border-color: #ff9c5d33; color: #ffcfa8; }
+[data-theme='dark'] .metric-card:hover, [data-theme='dark'] .panel:hover { box-shadow: 0 0 0 1px #d5f36a33, 0 24px 48px -26px #000, 0 0 40px -18px #d5f36a55; }
+[data-theme='dark'] .bar-active { box-shadow: 0 0 16px -2px #d5f36acc; }
+[data-theme='dark'] .live-dot, [data-theme='dark'] .k-pulse { box-shadow: 0 0 10px #d5f36a; }
+[data-theme='dark'] .tag, [data-theme='dark'] .pill { background: var(--soft-2); color: var(--text-2); }
+[data-theme='dark'] .k-bell-pop { background: #111916; border-color: var(--line); box-shadow: 0 30px 60px -20px #000; }
+[data-theme='dark'] .k-bell-pop li a:hover, [data-theme='dark'] .k-bell-pop li.unread a, [data-theme='dark'] .k-bell-pop li.unread > div { background: #d5f36a12; }
+[data-theme='dark'] .k-bell-pop li a, [data-theme='dark'] .k-bell-pop li > div { color: var(--text); }
+[data-theme='dark'] .lang-toggle { background: var(--soft); border-color: var(--line); }
+[data-theme='dark'] .athlete-top .brand { color: var(--text); }
+[data-theme='dark'] .qr-img, [data-theme='dark'] .lp-qr-code, [data-theme='dark'] .pay-qr img { background: #fff; border-radius: 12px; }
+[data-theme='dark'] .auth-shell, [data-theme='dark'] .auth-main { background: var(--background); }
+[data-theme='dark'] .auth-card, [data-theme='dark'] .pay-card { background: linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(165deg, #d5f36a40, #ffffff08 55%) border-box; border: 1px solid transparent; }
+[data-theme='dark'] .pay-page { background: var(--k-mesh); }
+[data-theme='dark'] .phone-input, [data-theme='dark'] .otp-input input { background: var(--field); color: var(--text); border-color: var(--line); }
+[data-theme='dark'] .feature-chip { background: var(--soft); border-color: var(--line); color: var(--text-2); }
+[data-theme='dark'] .feature-chip.on { background: #d5f36a1a; border-color: #d5f36a55; color: var(--text); }
+[data-theme='dark'] .member-card.workout-card, [data-theme='dark'] .workout-card { box-shadow: 0 0 50px -20px #d5f36a88; }
+
+/* ---------------------------------------------------------------- day / night switch */
+.k-switch { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px 0 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: var(--card-shadow); transition: border-color .2s ease, box-shadow .25s ease, transform .18s ease; }
+.k-switch:hover { border-color: #b9d45a; box-shadow: 0 0 0 4px #d5f36a33; }
+.k-switch:active { transform: scale(.97); }
+.k-switch:focus-visible { outline: 3px solid #79c9f5; outline-offset: 2px; }
+.k-switch-track { position: relative; width: 58px; height: 30px; border-radius: 999px; background: linear-gradient(90deg, #fff4c9, #e9f6b8); display: flex; align-items: center; justify-content: space-between; padding: 0 7px; transition: background .4s ease; }
+.k-switch-track svg { position: relative; z-index: 1; width: 14px; height: 14px; transition: color .35s ease, transform .5s cubic-bezier(.2, .85, .25, 1); }
+.k-switch-sun { color: #18211e; }
+.k-switch-moon { color: #7f8a6b; }
+.k-switch-knob { position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px #18211e40; transition: transform .45s cubic-bezier(.2, .85, .25, 1), background .4s ease, box-shadow .4s ease; }
+.k-switch.is-dark .k-switch-track { background: linear-gradient(90deg, #0b110f, #1d2b18); box-shadow: inset 0 0 0 1px #d5f36a33; }
+.k-switch.is-dark .k-switch-knob { transform: translateX(28px); background: #d5f36a; box-shadow: 0 0 14px #d5f36acc; }
+.k-switch.is-dark .k-switch-sun { color: #5d6b61; transform: rotate(-90deg); }
+.k-switch.is-dark .k-switch-moon { color: #18211e; transform: rotate(0); }
+.k-switch-label { min-width: 34px; text-align: left; }
+.k-switch-floating { position: fixed; z-index: 90; right: 18px; bottom: 18px; background: color-mix(in srgb, var(--surface) 86%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 14px 34px -14px #18211e80; }
+/* Pages with a top bar already have the switch there. */
+body:has(.topbar .k-switch, .athlete-top .k-switch) .k-switch-floating { display: none; }
+/* Member app: keep the floating switch above the tab bar on phones. */
+@media (max-width: 700px) {
+  .topbar .k-switch-label, .athlete-top .k-switch-label { display: none; }
+  .topbar .k-switch, .athlete-top .k-switch { padding: 0 4px; }
+  .k-switch-floating { bottom: 14px; right: 14px; }
+}
+
+/* ---------------------------------------------------------------- gym backdrop */
+.k-gym { position: fixed; z-index: -1; top: 0; bottom: 0; right: 0; left: var(--k-side); overflow: hidden; pointer-events: none; color: var(--gym-ink); }
+.k-gym-member { left: 0; }
+.k-gym-item { position: absolute; display: block; opacity: var(--gym-opacity); will-change: transform; animation-duration: var(--dur); animation-delay: var(--delay); animation-iteration-count: infinite; }
+.k-gym-item svg { display: block; width: 100%; height: auto; overflow: visible; }
+[data-theme='dark'] .k-gym-item svg { filter: drop-shadow(0 0 6px #d5f36a99); }
+
+/* Dumbbell curls: up, squeeze, down. */
+.k-rep { animation-name: k-gym-rep; animation-timing-function: cubic-bezier(.45, 0, .35, 1); animation-direction: alternate; transform: rotate(var(--tilt)); }
+@keyframes k-gym-rep { 0% { transform: translateY(18px) rotate(var(--tilt)); } 55% { transform: translateY(-26px) rotate(calc(var(--tilt) + 6deg)); } 100% { transform: translateY(-30px) rotate(calc(var(--tilt) + 8deg)); } }
+/* Plates spin like they are being loaded on a bar. */
+.k-spin { animation-name: k-gym-spin; animation-timing-function: linear; }
+@keyframes k-gym-spin { to { transform: rotate(360deg); } }
+/* Kettlebell swing from the handle. */
+.k-swing { animation-name: k-gym-swing; animation-timing-function: cubic-bezier(.45, 0, .55, 1); animation-direction: alternate; transform-origin: 50% 6%; }
+@keyframes k-gym-swing { from { transform: rotate(-22deg); } to { transform: rotate(22deg); } }
+/* Barbell rolling across the floor. */
+.k-roll { animation-name: k-gym-roll; animation-timing-function: linear; left: 0 !important; }
+@keyframes k-gym-roll { from { transform: translateX(-120%); } to { transform: translateX(calc(100vw + 20%)); } }
+/* Small pieces float. */
+.k-drift { animation-name: k-gym-drift; animation-timing-function: ease-in-out; animation-direction: alternate; }
+@keyframes k-gym-drift { from { transform: translate(0, 0) rotate(-8deg); } to { transform: translate(26px, -40px) rotate(14deg); } }
+
+/* The floor: same treadmill-belt grid as the landing hero, sized for dashboards. */
+.k-floor { position: absolute; left: -40%; right: -40%; bottom: -6%; height: 58%; background-image: linear-gradient(var(--floor-line) 1px, transparent 1px), linear-gradient(90deg, var(--floor-line-2) 1px, transparent 1px); background-size: 72px 72px; transform: perspective(520px) rotateX(64deg); transform-origin: 50% 0; mask-image: linear-gradient(to bottom, transparent 0%, #000 40%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 40%); animation: k-floor-belt 1.8s linear infinite; }
+@keyframes k-floor-belt { to { background-position: 0 72px, 0 0; } }
+.k-horizon { position: absolute; left: 0; right: 0; bottom: 52%; height: 180px; transform: translateY(50%); background: radial-gradient(60% 50% at 50% 50%, var(--floor-glow), transparent 70%); animation: k-breathe 7s ease-in-out infinite; }
+.k-gym-member .k-floor { height: 46%; }
+
+/* Heart-rate line: a lit beat travels along a faint trace. */
+.k-gym-pulse { position: absolute; left: 0; right: 0; bottom: 18px; width: 100%; height: 70px; }
+.k-gym-pulse path { stroke: var(--gym-ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; opacity: calc(var(--gym-opacity) * 1.6); stroke-dasharray: 220 1500; animation: k-gym-ecg 5.5s linear infinite; }
+[data-theme='dark'] .k-gym-pulse path { filter: drop-shadow(0 0 6px #d5f36a); opacity: .35; }
+@keyframes k-gym-ecg { from { stroke-dashoffset: 1720; } to { stroke-dashoffset: 0; } }
+
+@media (max-width: 700px) {
+  .k-gym-item:nth-child(n + 6) { display: none; }
+  .k-gym-item { scale: .75; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-gym-item, .k-gym-pulse path, .k-floor, .k-horizon { animation: none !important; }
+  .k-gym-pulse path { stroke-dasharray: none; }
+}
+
+/* ---------------------------------------------------------------- lime surfaces */
+/* Anything painted lime keeps dark ink in both themes. */
+:is(.avatar, .badge-tile.earned .badge-icon, .btn-lime, .button-link.lime, .join-gift, .lang-toggle button.active, .lime-button, .member-head .big-avatar, .price-tag, .rank.r1, .role-switcher button.role-active, .workout-card, .lp-btn-lime) {
+  color: #18211e;
+  --text: #18211e;
+  --text-2: #3e4b40;
+  --text-3: #55624f;
+  --muted: #4f5c46;
+  --lime-text: #2f3f0c;
+  --line: #18211e33;
+  --line-soft: #18211e26;
+  --soft: #ffffff66;
+  --soft-2: #ffffff59;
+  --surface: #ffffffaa;
+}
+[data-theme='dark'] .workout-card .btn-dark, [data-theme='dark'] .workout-card .dark-button { background: #18211e !important; color: #fff !important; }
+
+/* ---------------------------------------------------------------- badges at night */
+[data-theme='dark'] .badge-blue { background: #79c9f51f; color: #9bd8fb; }
+[data-theme='dark'] .badge-red { background: #ff6b5b21; color: #ff9c8c; }
+[data-theme='dark'] .badge-grey { background: #ffffff10; color: var(--text-2); }
+[data-theme='dark'] .badge-purple { background: #c792ea21; color: #d8b0f0; }
+
+/* Member home cards with their own colour. */
+[data-theme='dark'] .plan-card { background: linear-gradient(160deg, #1d2d18, #121a16); border: 1px solid #d5f36a26; }
+[data-theme='dark'] .challenge-card { background: linear-gradient(160deg, #2a1d33, #141019); border-color: #c792ea33; }
+[data-theme='dark'] .challenge-card > strong { color: #d8b0f0; }
+[data-theme='dark'] .streak-chip { background: #ff9c5d1f; color: #ffb27f; }

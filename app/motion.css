@@ -1,0 +1,176 @@
+/* =====================================================================
+   Rep+ motion layer - loaded on every page from app/layout.tsx.
+
+   - Route entrance: app/template.tsx wraps every page in .route-enter, which
+     remounts on each navigation, so content rises in with a short stagger.
+     The sidebar and tab bar never re-animate.
+   - Live surfaces: cursor spotlight on cards, glowing active nav, bars and
+     meters that grow, numbers that count up (components/motion/motion-layer).
+   - Futuristic backdrop: a faint drifting grid and a lime glow behind the
+     dashboards, a moving floor grid behind login pages.
+   Everything is disabled under prefers-reduced-motion.
+   ===================================================================== */
+
+.route-enter { display: contents; }
+
+:root {
+  --k-ease: cubic-bezier(.2, .85, .25, 1);
+  --k-lime-glow: 0 0 0 1px #d5f36a66, 0 10px 34px -12px #b7d84a99;
+}
+
+@keyframes k-rise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes k-fade { from { opacity: 0; } }
+@keyframes k-pop { 0% { opacity: 0; transform: scale(.85); } 70% { transform: scale(1.04); } }
+@keyframes k-grow-x { from { transform: scaleX(0); } }
+@keyframes k-grow-y { from { transform: scaleY(0); } }
+@keyframes k-ping { 75%, 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes k-drift { to { background-position: 44px 44px, 0 0; } }
+@keyframes k-breathe { 50% { opacity: .55; transform: scale(1.08); } }
+@keyframes k-sweep { from { transform: translateX(-120%); } to { transform: translateX(220%); } }
+@keyframes k-belt { to { background-position: 0 64px, 0 0; } }
+@keyframes k-float { 50% { transform: translateY(-6px); } }
+@keyframes k-ripple { to { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+@keyframes k-bar { 0% { width: 0; } 60% { width: 72%; } 100% { width: 88%; } }
+@keyframes k-shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ---------------------------------------------------------------- route progress */
+.k-progress { position: fixed; z-index: 1000; top: 0; left: 0; height: 3px; width: 0; background: linear-gradient(90deg, #a9cb35, var(--lime)); box-shadow: 0 0 12px 1px #d5f36acc; border-radius: 0 3px 3px 0; pointer-events: none; opacity: 0; transition: opacity .25s ease; }
+.k-progress.is-loading { opacity: 1; animation: k-bar 6s cubic-bezier(.1, .7, .2, 1) forwards; }
+.k-progress.is-done { opacity: 0; width: 100% !important; animation: none; transition: width .2s ease, opacity .35s .2s ease; }
+
+/* ---------------------------------------------------------------- page entrance */
+.route-enter .topbar h2, .route-enter .top-kicker { animation: k-rise .5s var(--k-ease) backwards; }
+.route-enter .top-kicker { animation-delay: .04s; }
+
+.route-enter .content-wrap > *,
+.route-enter .athlete-content > *,
+.route-enter .a-page > *,
+.route-enter .entry-wrap > *,
+.route-enter .pay-card > * { animation: k-rise .55s var(--k-ease) backwards; }
+.route-enter .content-wrap > :nth-child(2), .route-enter .a-page > :nth-child(2), .route-enter .entry-wrap > :nth-child(2), .route-enter .pay-card > :nth-child(2) { animation-delay: .06s; }
+.route-enter .content-wrap > :nth-child(3), .route-enter .a-page > :nth-child(3), .route-enter .entry-wrap > :nth-child(3), .route-enter .pay-card > :nth-child(3) { animation-delay: .12s; }
+.route-enter .content-wrap > :nth-child(4), .route-enter .a-page > :nth-child(4), .route-enter .entry-wrap > :nth-child(4), .route-enter .pay-card > :nth-child(4) { animation-delay: .18s; }
+.route-enter .content-wrap > :nth-child(5), .route-enter .a-page > :nth-child(5), .route-enter .pay-card > :nth-child(5) { animation-delay: .24s; }
+.route-enter .content-wrap > :nth-child(n + 6), .route-enter .a-page > :nth-child(n + 6), .route-enter .pay-card > :nth-child(n + 6) { animation-delay: .3s; }
+
+/* Grids of cards stagger their own children. */
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .feature-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > * { animation: k-rise .5s var(--k-ease) backwards; }
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(2) { animation-delay: .06s; }
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(3) { animation-delay: .12s; }
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(4) { animation-delay: .18s; }
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(n + 5) { animation-delay: .24s; }
+
+/* Lists and table rows cascade in. */
+.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .list-rows > *, .register-list > *, .leader-list > li, .insight-list > li) { animation: k-rise .45s var(--k-ease) backwards; }
+.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(2) { animation-delay: .04s; }
+.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(3) { animation-delay: .08s; }
+.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(4) { animation-delay: .12s; }
+.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(5) { animation-delay: .16s; }
+.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(n + 6) { animation-delay: .2s; }
+
+/* Bars, meters and progress fills grow from zero. */
+.route-enter :is(.meter, .usage-bar, .quota-meter, .split-bar, .slot-bar, .lp-day-rail) > span { transform-origin: left center; animation: k-grow-x .9s .2s var(--k-ease) backwards; }
+.route-enter .bar { transform-origin: bottom; animation: k-grow-y .8s var(--k-ease) backwards; }
+.route-enter .bar-group:nth-child(2) .bar { animation-delay: .04s; } .route-enter .bar-group:nth-child(3) .bar { animation-delay: .08s; } .route-enter .bar-group:nth-child(4) .bar { animation-delay: .12s; } .route-enter .bar-group:nth-child(5) .bar { animation-delay: .16s; } .route-enter .bar-group:nth-child(6) .bar { animation-delay: .2s; } .route-enter .bar-group:nth-child(n + 7) .bar { animation-delay: .24s; }
+.route-enter :is(.heat-cell, .dot-slot, .visit-grid > *) { animation: k-pop .4s var(--k-ease) backwards; }
+.route-enter .badge, .route-enter .count-badge, .route-enter .nav-count, .route-enter .bell-count { animation: k-pop .45s .25s var(--k-ease) backwards; }
+
+/* ---------------------------------------------------------------- backdrops */
+.app-main { position: relative; isolation: isolate; }
+.app-main::before { content: ''; position: fixed; z-index: -2; inset: 0; pointer-events: none; background-image: radial-gradient(var(--k-dot, #18211e12) 1px, transparent 1.2px), linear-gradient(transparent, transparent); background-size: 22px 22px, 100% 100%; mask-image: linear-gradient(to bottom, #000 0%, transparent 70%); -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 70%); animation: k-drift 18s linear infinite; }
+.app-main::after { content: ''; position: fixed; z-index: -2; right: -180px; top: -220px; width: 620px; height: 620px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, var(--k-glow, #d5f36a2e) 0%, transparent 65%); animation: k-breathe 9s ease-in-out infinite; }
+
+/* No position here: on phones the sidebar is a fixed drawer (globals.css). */
+.sidebar { background-image: radial-gradient(120% 220px at 0% 0%, #d5f36a1f, transparent 70%); background-repeat: no-repeat; }
+.sidebar nav a, .sidebar nav button { position: relative; transition: background .2s ease, color .2s ease, transform .2s ease; }
+.sidebar nav a:hover:not(.nav-active):not(.nav-soon) { background: #ffffff0d; color: #fff; transform: translateX(3px); }
+.sidebar nav a.nav-active::before { content: ''; position: absolute; left: -6px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--lime); box-shadow: 0 0 12px 1px #d5f36acc; animation: k-grow-y .4s var(--k-ease) backwards; }
+.sidebar nav a.nav-active { box-shadow: inset 0 0 0 1px #d5f36a1f; }
+.sidebar nav a.nav-active svg { filter: drop-shadow(0 0 6px #d5f36a99); }
+.brand-svg { transition: transform .35s var(--k-ease); }
+.brand:hover .brand-svg { transform: rotate(6deg) scale(1.08); }
+
+/* Login, signup and admin login: a floor grid running like a treadmill. */
+.auth-hero { isolation: isolate; }
+.auth-hero::after { content: ''; position: absolute; z-index: -1; left: -40%; right: -40%; bottom: -10%; height: 55%; background-image: linear-gradient(#d5f36a24 1px, transparent 1px), linear-gradient(90deg, #d5f36a18 1px, transparent 1px); background-size: 64px 64px; transform: perspective(500px) rotateX(62deg); transform-origin: 50% 0; mask-image: linear-gradient(to bottom, transparent, #000 45%); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%); animation: k-belt 1.8s linear infinite; pointer-events: none; }
+.auth-hero::before { content: ''; position: absolute; z-index: -1; width: 520px; height: 520px; right: -160px; top: -200px; border-radius: 50%; background: radial-gradient(circle, #d5f36a30, transparent 62%); animation: k-breathe 7s ease-in-out infinite; pointer-events: none; }
+.route-enter .auth-hero > * { animation: k-rise .7s var(--k-ease) backwards; }
+.route-enter .auth-hero > :nth-child(2) { animation-delay: .1s; } .route-enter .auth-hero > :nth-child(3) { animation-delay: .2s; }
+.route-enter .auth-card, .route-enter .signup-card { animation: k-rise .6s .15s var(--k-ease) backwards; }
+
+/* Public pages (pay link, invite, enquiry): floor grid behind the card. */
+.pay-page { position: relative; isolation: isolate; overflow: hidden; }
+.pay-page::before { content: ''; position: fixed; z-index: -1; left: -40%; right: -40%; bottom: -10%; height: 45%; background-image: linear-gradient(#18211e14 1px, transparent 1px), linear-gradient(90deg, #18211e10 1px, transparent 1px); background-size: 56px 56px; transform: perspective(500px) rotateX(62deg); transform-origin: 50% 0; mask-image: linear-gradient(to bottom, transparent, #000 50%); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 50%); animation: k-belt 2.4s linear infinite; pointer-events: none; }
+
+/* Member app: a soft glow up top. */
+.athlete-app { position: relative; isolation: isolate; }
+.athlete-app::before { content: ''; position: fixed; z-index: -1; left: 50%; top: -260px; width: 620px; height: 520px; transform: translateX(-50%); border-radius: 50%; pointer-events: none; background: radial-gradient(circle, #d5f36a40, transparent 66%); animation: k-breathe 8s ease-in-out infinite; }
+
+/* ---------------------------------------------------------------- cards: spotlight + lift */
+/* motion-layer.tsx sets --mx / --my on the card under the pointer. */
+.k-spot { position: relative; transition: transform .25s var(--k-ease), box-shadow .25s ease, border-color .25s ease; }
+.k-spot::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s ease; background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), #d5f36a26, transparent 45%); }
+.k-spot:hover::after { opacity: 1; }
+.k-spot:hover { border-color: #c8de7a; box-shadow: 0 18px 40px -26px #18211e59; }
+:is(.metric-card, .template-card, .price-card, .slot-tile, .badge-tile, .pr-tile, .photo-tile, .method-card).k-spot:hover { transform: translateY(-3px); }
+.price-card.popular.k-spot::after, .hero-card.k-spot::after, .k-spot.dark::after { background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), #d5f36a22, transparent 45%); }
+.metric-icon { transition: transform .35s var(--k-ease); }
+.metric-card:hover .metric-icon { transform: rotate(-8deg) scale(1.1); }
+
+/* Shine sweep across dark hero and popular cards. */
+.hero-card, .price-card.popular, .plan-hero, .pay-box { position: relative; overflow: hidden; }
+.hero-card::after, .plan-hero::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; pointer-events: none; background: linear-gradient(100deg, transparent, #ffffff12, transparent); animation: k-sweep 6s 1s ease-in-out infinite; }
+
+/* ---------------------------------------------------------------- controls */
+.btn, .button-link, .lp-btn, .icon-button, .icon-btn, .tabbar a, .seg a, .seg button, .tab-links a, .chip-link { position: relative; overflow: hidden; transition: transform .18s var(--k-ease), box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease; }
+.btn:hover:not([disabled]), .button-link:hover { transform: translateY(-1px); }
+.btn:active:not([disabled]), .button-link:active, .icon-button:active, .icon-btn:active { transform: translateY(0) scale(.97); }
+.btn-lime:hover:not([disabled]), .lime-button:hover, .button-link.lime:hover { box-shadow: var(--k-lime-glow); }
+.btn-dark:hover:not([disabled]), .dark-button:hover { box-shadow: 0 10px 26px -12px #18211ecc; }
+.btn svg:last-child:not(:first-child) { transition: transform .2s ease; }
+.btn:hover svg:last-child:not(:first-child) { transform: translateX(2px); }
+.k-ripple { position: absolute; left: 0; top: 0; width: 220%; aspect-ratio: 1; border-radius: 50%; background: currentColor; opacity: .18; transform: translate(-50%, -50%) scale(0); pointer-events: none; animation: k-ripple .6s ease-out forwards; }
+
+:is(.field, .toolbar, .lead-panel, .risk-outcome, .expense-form) :is(input, select, textarea) { transition: border-color .2s ease, box-shadow .25s ease, background .2s ease; }
+:is(.field, .toolbar, .lead-panel, .risk-outcome, .expense-form) :is(input, select, textarea):focus { border-color: #a9cb35; box-shadow: 0 0 0 4px #d5f36a40, 0 0 18px -4px #d5f36a99; background: #fff; }
+
+.tab-links a.active, .seg .on, .seg a.on { box-shadow: 0 6px 18px -10px #18211ecc; }
+.live-dot { position: relative; }
+.live-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--lime); animation: k-ping 1.8s cubic-bezier(0, 0, .2, 1) infinite; }
+
+/* Member tab bar: the active tab glows and its icon bounces in. */
+.tabbar a { transition: color .2s ease, transform .2s ease; }
+.tabbar a.active svg, .tabbar a[aria-current='page'] svg { filter: drop-shadow(0 0 8px #d5f36acc); animation: k-pop .45s var(--k-ease) backwards; }
+.tabbar a:active { transform: scale(.94); }
+
+.empty-panel .round-icon, .empty-panel > svg { animation: k-float 4s ease-in-out infinite; }
+.bell-count, .tab-count { animation: k-pop .4s var(--k-ease) backwards; }
+
+/* Counted numbers keep their width steady while they tick. */
+[data-k-count] { font-variant-numeric: tabular-nums; }
+
+/* Skeleton shimmer, for any element given .k-skeleton. */
+.k-skeleton { background: linear-gradient(90deg, #eef2e8 25%, #f8faf4 50%, #eef2e8 75%); background-size: 200% 100%; animation: k-shine 1.4s linear infinite; border-radius: 10px; }
+
+/* Staff notifications dropdown (components/shell/staff-bell.tsx). */
+.k-bell { position: relative; }
+.k-bell-pop { position: absolute; z-index: 60; right: 0; top: calc(100% + 10px); width: min(360px, 90vw); background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 30px 60px -24px #18211e66; padding: 8px; transform-origin: top right; animation: k-pop .28s var(--k-ease); }
+.k-bell-pop header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 12px; font-weight: 800; }
+.k-bell-pop header button { background: none; border: 0; color: #7b8e36; font-size: 11px; font-weight: 700; cursor: pointer; }
+.k-bell-pop ul { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow: auto; }
+.k-bell-pop li a, .k-bell-pop li > div { display: block; padding: 10px; border-radius: 10px; text-decoration: none; color: var(--ink); font-size: 12px; }
+.k-bell-pop li a:hover { background: #f3f7e8; }
+.k-bell-pop li.unread a, .k-bell-pop li.unread > div { background: #f6fae9; }
+.k-bell-pop li strong { display: block; font-size: 12px; }
+.k-bell-pop li small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.4; }
+.k-bell-pop li time { display: block; color: #a0aaa2; font-size: 10px; margin-top: 4px; }
+.k-bell-pop .k-bell-empty { padding: 22px 10px; text-align: center; color: var(--muted); font-size: 12px; }
+.k-bell-dot { position: absolute; top: 6px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 0 2px #fff; }
+.k-bell-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--orange); animation: k-ping 1.8s cubic-bezier(0, 0, .2, 1) infinite; }
+
+/* ---------------------------------------------------------------- reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  .k-spot:hover, .btn:hover, .button-link:hover { transform: none !important; }
+}
+a.icon-button { display: grid; place-items: center; text-decoration: none; color: inherit; }
