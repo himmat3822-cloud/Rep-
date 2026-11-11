@@ -596,3 +596,15 @@ nav.a-tabs a { width:auto; display:inline-flex; }
 .price-card li.soon { color:var(--muted); }.price-card li.soon svg { color:#b0b8ad; }
 .soon-tag { align-self:flex-start; flex:none; line-height:1.4; margin-left:6px; font-size:9px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; background:var(--soft); color:var(--text-3); padding:2px 6px; border-radius:6px; white-space:nowrap; }
 .feature-chip.soon { opacity:.6; cursor:not-allowed; }
+
+/* Sidebar scrolling: on desktop it stays in view and scrolls on its own; on
+   phones the drawer is capped to the screen height so every item is reachable. */
+.sidebar-scrim { display: none; }
+@media (min-width: 701px) {
+  .sidebar { position: sticky; top: 0; align-self: flex-start; height: 100vh; height: 100dvh; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #ffffff22 transparent; }
+}
+@media (max-width: 700px) {
+  .sidebar { height: 100vh; height: 100dvh; min-height: 0; max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .sidebar-open { z-index: 60; }
+  .sidebar-scrim { display: block; position: fixed; inset: 0; z-index: 55; background: #0a0f0d80; backdrop-filter: blur(2px); border: 0; padding: 0; cursor: pointer; animation: k-fade .2s ease backwards; }
+}

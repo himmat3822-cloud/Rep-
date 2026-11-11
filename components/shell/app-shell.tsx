@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { AlertTriangle, LogOut, Menu, Search, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Brand, initials } from '@/components/brand'
@@ -71,6 +71,21 @@ export function AppShell({ workspace, kicker, title, sections, bottom = [], prof
   const [open, setOpen] = useState(false)
   const [leaving, setLeaving] = useState(false)
 
+  // Mobile drawer: lock the page behind it and close on Escape.
+  useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = previous
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
   async function signOut() {
     setLeaving(true)
     const url = logout === 'admin' ? '/api/admin/auth/logout' : '/api/auth/logout?as=staff'
@@ -97,6 +112,7 @@ export function AppShell({ workspace, kicker, title, sections, bottom = [], prof
 
   return (
     <main className="kasrat-app">
+      {open ? <button type="button" className="sidebar-scrim" aria-label="Close menu" onClick={() => setOpen(false)} /> : null}
       <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
         <Brand />
         <div className="workspace-label">{workspace}</div>
