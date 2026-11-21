@@ -34,6 +34,7 @@ export interface ApiErrorBody {
 
 export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'READ_ONLY' | 'SUSPENDED' | 'CANCELLED'
 export type StaffKind = 'OWNER' | 'TRAINER' | 'DESK'
+export type QueryTopic = 'DIET' | 'WORKOUT' | 'PLAN' | 'PT' | 'OTHER'
 export type LanguageCode = 'EN' | 'HI' | 'PA'
 
 // ---- Auth ----

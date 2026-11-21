@@ -10,7 +10,7 @@ const deskTools = (base: string): NavItem[] => [
   { label: 'Collect payment', href: `${base}/collect`, icon: 'collect', ready: true },
 ]
 
-export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, atRisk: number): NavSection[] {
+export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, atRisk: number, openQueries = 0): NavSection[] {
   const sections: NavSection[] = [
     {
       items: [
@@ -29,6 +29,7 @@ export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, 
     {
       title: 'ENGAGE',
       items: [
+        { label: 'Member queries', href: '/owner/queries', icon: 'queries', ready: true, count: openQueries || undefined },
         { label: 'Announcements', href: '/owner/announcements', icon: 'announcements', ready: true },
         { label: 'Challenges', href: '/owner/challenges', icon: 'challenges', ready: true },
         { label: 'Complaints', href: '/owner/complaints', icon: 'complaints', ready: true },
@@ -58,12 +59,13 @@ export function deskNav(athleteLabelPlural = 'Athletes'): NavSection[] {
   ]
 }
 
-export function trainerNav(athleteLabelPlural: string): NavSection[] {
+export function trainerNav(athleteLabelPlural: string, openQueries = 0): NavSection[] {
   return [
     {
       items: [
         { label: 'Today', href: '/trainer', icon: 'overview', ready: true },
         { label: `My ${athleteLabelPlural.toLowerCase()}`, href: '/trainer/athletes', icon: 'members', ready: true },
+        { label: 'Member queries', href: '/trainer/queries', icon: 'queries', ready: true, count: openQueries || undefined },
         { label: 'Workout plans', href: '/trainer/workouts', icon: 'workouts', ready: true },
         { label: 'PT sessions', href: '/trainer/sessions', icon: 'sessions', ready: true },
       ],

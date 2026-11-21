@@ -24,10 +24,21 @@ export const COOKIE_NAMES: Record<SessionType, { access: string; refresh: string
   admin: { access: 'k_adm_at', refresh: 'k_adm_rt', refreshPath: '/api/admin/auth' },
 }
 
+// Sliding lifetimes: every refresh issues a new token with the full lifetime,
+// so a member who opens the app at least once a year never logs in again.
 const REFRESH_TTL_SECONDS: Record<SessionType, number> = {
-  staff: 30 * 24 * 3600,
-  athlete: 90 * 24 * 3600,
+  staff: 90 * 24 * 3600,
+  athlete: 365 * 24 * 3600,
   admin: 12 * 3600,
+}
+
+// Access tokens are short-lived and stateless. Members get a longer one so
+// the app rarely has to stop for a refresh; staff keep a tighter window so
+// permission changes and deactivation land quickly.
+const ACCESS_TTL_BY_TYPE: Record<SessionType, number> = {
+  staff: 30 * 60,
+  athlete: 60 * 60,
+  admin: ACCESS_TTL_SECONDS,
 }
 
 // Two tabs refreshing at the same moment both present the same refresh
@@ -119,7 +130,7 @@ async function setAccessCookie(type: SessionType, token: string) {
     secure: isProduction,
     sameSite: 'lax',
     path: '/',
-    maxAge: ACCESS_TTL_SECONDS,
+    maxAge: ACCESS_TTL_BY_TYPE[type],
   })
 }
 
@@ -165,7 +176,7 @@ export async function startSession(type: SessionType, principalId: string, meta:
   const familyId = randomToken(16)
   const claims = await buildClaims(type, principalId, familyId)
   const gymId = claims.typ === 'admin' ? null : claims.gid
-  const access = await signAccessToken(claims)
+  const access = await signAccessToken(claims, ACCESS_TTL_BY_TYPE[type])
   const refresh = await storeRefreshToken(type, principalId, gymId, familyId, meta)
   await setAccessCookie(type, access)
   await setRefreshCookie(type, refresh)
@@ -192,20 +203,31 @@ export async function rotateSession(type: SessionType, meta: RequestMeta): Promi
   const claim = await prisma.refreshToken.updateMany({ where: { id: record.id, usedAt: null }, data: { usedAt: new Date() } })
   const wonRace = claim.count === 1
 
+  let recovered = false
   if (!wonRace) {
     const usedAt = record.usedAt?.getTime() ?? Date.now()
     if (Date.now() - usedAt > CONCURRENT_REFRESH_GRACE_MS) {
-      // A rotated token came back: assume theft and kill the whole family.
-      await revokeFamily(record.familyId)
-      await clearSessionCookies(type)
-      return { ok: false, reason: 'reused' }
+      // A rotated token came back. If its successor was never used, the
+      // response carrying the new cookie never reached the browser (app
+      // closed mid-request, cancelled prefetch, flaky mobile data): reissue.
+      // If the successor WAS used, two parties hold this session: assume
+      // theft and kill the whole family.
+      const successorUsed = await prisma.refreshToken.count({
+        where: { familyId: record.familyId, createdAt: { gt: record.createdAt }, usedAt: { not: null } },
+      })
+      if (successorUsed > 0) {
+        await revokeFamily(record.familyId)
+        await clearSessionCookies(type)
+        return { ok: false, reason: 'reused' }
+      }
+      recovered = true
     }
   }
 
   try {
     const claims = await buildClaims(type, record.principalId, record.familyId)
-    await setAccessCookie(type, await signAccessToken(claims))
-    if (wonRace) {
+    await setAccessCookie(type, await signAccessToken(claims, ACCESS_TTL_BY_TYPE[type]))
+    if (wonRace || recovered) {
       const next = await storeRefreshToken(type, record.principalId, record.gymId, record.familyId, meta)
       await setRefreshCookie(type, next)
     }

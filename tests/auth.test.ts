@@ -186,15 +186,36 @@ describe('OTP + sessions (DB)', () => {
     const second = jar.get(COOKIE_NAMES.staff.refresh) as string
     expect(second).not.toBe(first)
 
-    // Pretend the first token was used long ago, then replay it.
+    // The real browser keeps going with the second token...
+    expect((await rotateSession('staff', {})).ok).toBe(true)
+    const third = jar.get(COOKIE_NAMES.staff.refresh) as string
+
+    // ...then the first token is replayed long after: two holders, kill it.
     await db.refreshToken.updateMany({ where: { principalId: gym.owner.id, usedAt: { not: null } }, data: { usedAt: new Date(Date.now() - 60_000) } })
     jar.set(COOKIE_NAMES.staff.refresh, first)
     const replay = await rotateSession('staff', {})
     expect(replay).toEqual({ ok: false, reason: 'reused' })
 
-    jar.set(COOKIE_NAMES.staff.refresh, second)
+    jar.set(COOKIE_NAMES.staff.refresh, third)
     const afterKill = await rotateSession('staff', {})
     expect(afterKill.ok).toBe(false)
+  })
+
+  it('keeps the member logged in when a refreshed cookie never arrived', async () => {
+    const { startSession, rotateSession, COOKIE_NAMES } = await import('@/lib/auth/session')
+    jar.clear()
+    await startSession('athlete', gym.athlete.id, {})
+    const first = jar.get(COOKIE_NAMES.athlete.refresh) as string
+    expect((await rotateSession('athlete', {})).ok).toBe(true)
+
+    // The response with the new cookie was lost; the phone still holds the first one.
+    await db.refreshToken.updateMany({ where: { principalId: gym.athlete.id, usedAt: { not: null } }, data: { usedAt: new Date(Date.now() - 60_000) } })
+    jar.set(COOKIE_NAMES.athlete.refresh, first)
+    const again = await rotateSession('athlete', {})
+    expect(again.ok).toBe(true)
+    const next = jar.get(COOKIE_NAMES.athlete.refresh) as string
+    expect(next).not.toBe(first)
+    expect((await rotateSession('athlete', {})).ok).toBe(true)
   })
 
   it('refresh fails once the staff account is disabled', async () => {

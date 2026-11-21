@@ -176,3 +176,33 @@ export const signupSchema = z.object({
   planId: id,
   cycle: z.enum(['MONTHLY', 'ANNUAL']).default('MONTHLY'),
 })
+
+// Bulk member import (Members > Import). Cells arrive as text; the server
+// parses phones, dates and money itself.
+const importCell = z.string().max(300).optional()
+export const memberImportSchema = z.object({
+  rows: z
+    .array(
+      z.object({
+        name: importCell,
+        phone: importCell,
+        email: importCell,
+        gender: importCell,
+        dob: importCell,
+        joined: importCell,
+        plan: importCell,
+        start: importCell,
+        end: importCell,
+        paid: importCell,
+        due: importCell,
+        branch: importCell,
+        trainer: importCell,
+        code: importCell,
+        notes: importCell,
+      }),
+    )
+    .min(1, 'The file has no rows')
+    .max(2000, 'One file can have up to 2000 members'),
+  defaultBranchId: z.string().max(40).nullable().default(null),
+  dryRun: z.boolean().default(true),
+})

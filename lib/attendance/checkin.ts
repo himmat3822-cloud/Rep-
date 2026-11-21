@@ -168,8 +168,12 @@ export async function checkOut(db: TenantDb, checkInId: string, at: Date = new D
 }
 
 // Device "OUT" punch: closes today's open visit of that member.
+// Looks back 6 hours, not "since midnight": an 11:30 PM check-in followed by
+// a 12:20 AM exit punch must still close the visit.
+const MAX_VISIT_MS = 6 * 3600000
+
 export async function checkOutOpenVisit(db: TenantDb, athleteId: string, at: Date): Promise<boolean> {
-  const open = await db.checkIn.findFirst({ where: { athleteId, checkedOutAt: null, checkedInAt: { gte: istStartOfDay(at), lte: at } }, orderBy: { checkedInAt: 'desc' } })
+  const open = await db.checkIn.findFirst({ where: { athleteId, checkedOutAt: null, checkedInAt: { gte: new Date(at.getTime() - MAX_VISIT_MS), lte: at } }, orderBy: { checkedInAt: 'desc' } })
   if (!open) return false
   await db.checkIn.update({ where: { id: open.id }, data: { checkedOutAt: at } })
   return true

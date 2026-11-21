@@ -79,7 +79,17 @@ export interface LeaderRow {
 }
 
 // Ranked by distinct workout days this month, then by current streak.
-export async function leaderboard(db: TenantDb, athleteId: string, now: Date = new Date(), limit = 20): Promise<{ rows: LeaderRow[]; me: LeaderRow | null; hidden: boolean }> {
+export interface Leaderboard {
+  rows: LeaderRow[]
+  me: LeaderRow | null
+  hidden: boolean
+  // Everyone with at least one workout this month.
+  total: number
+  // The member directly above me (who to chase) and the workouts needed to pass them.
+  chase: { name: string; rank: number; workoutsToPass: number } | null
+}
+
+export async function leaderboard(db: TenantDb, athleteId: string, now: Date = new Date(), limit = 20): Promise<Leaderboard> {
   const { year, month } = istParts(now)
   const from = new Date(Date.UTC(year, month, 1) - IST_OFFSET_MS)
   const [visits, athletes, self] = await Promise.all([
@@ -104,7 +114,14 @@ export async function leaderboard(db: TenantDb, athleteId: string, now: Date = n
     previous = row
     return { ...row, rank, me: row.athleteId === athleteId }
   })
-  return { rows: withRank.slice(0, limit), me: withRank.find((row) => row.me) ?? null, hidden: Boolean(self?.hideFromLeaderboard) }
+  const me = withRank.find((row) => row.me) ?? null
+  let chase: Leaderboard['chase'] = null
+  if (me && me.rank > 1) {
+    const above = [...withRank].reverse().find((row) => row.rank < me.rank)
+    // One workout more than them is always enough to pass.
+    if (above) chase = { name: above.name, rank: above.rank, workoutsToPass: above.workouts - me.workouts + 1 }
+  }
+  return { rows: withRank.slice(0, limit), me, hidden: Boolean(self?.hideFromLeaderboard), total: withRank.length, chase }
 }
 
 // "Arjun M." - first name + initial, so the board does not show full names.

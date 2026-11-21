@@ -39,39 +39,39 @@
 .k-progress.is-done { opacity: 0; width: 100% !important; animation: none; transition: width .2s ease, opacity .35s .2s ease; }
 
 /* ---------------------------------------------------------------- page entrance */
-.route-enter .topbar h2, .route-enter .top-kicker { animation: k-rise .5s var(--k-ease) backwards; }
+.route-enter .topbar h2, .route-enter .top-kicker { animation: k-rise .3s var(--k-ease) backwards; }
 .route-enter .top-kicker { animation-delay: .04s; }
 
 .route-enter .content-wrap > *,
 .route-enter .athlete-content > *,
 .route-enter .a-page > *,
 .route-enter .entry-wrap > *,
-.route-enter .pay-card > * { animation: k-rise .55s var(--k-ease) backwards; }
-.route-enter .content-wrap > :nth-child(2), .route-enter .a-page > :nth-child(2), .route-enter .entry-wrap > :nth-child(2), .route-enter .pay-card > :nth-child(2) { animation-delay: .06s; }
-.route-enter .content-wrap > :nth-child(3), .route-enter .a-page > :nth-child(3), .route-enter .entry-wrap > :nth-child(3), .route-enter .pay-card > :nth-child(3) { animation-delay: .12s; }
-.route-enter .content-wrap > :nth-child(4), .route-enter .a-page > :nth-child(4), .route-enter .entry-wrap > :nth-child(4), .route-enter .pay-card > :nth-child(4) { animation-delay: .18s; }
-.route-enter .content-wrap > :nth-child(5), .route-enter .a-page > :nth-child(5), .route-enter .pay-card > :nth-child(5) { animation-delay: .24s; }
-.route-enter .content-wrap > :nth-child(n + 6), .route-enter .a-page > :nth-child(n + 6), .route-enter .pay-card > :nth-child(n + 6) { animation-delay: .3s; }
+.route-enter .pay-card > * { animation: k-rise .3s var(--k-ease) backwards; }
+.route-enter .content-wrap > :nth-child(2), .route-enter .a-page > :nth-child(2), .route-enter .entry-wrap > :nth-child(2), .route-enter .pay-card > :nth-child(2) { animation-delay: .03s; }
+.route-enter .content-wrap > :nth-child(3), .route-enter .a-page > :nth-child(3), .route-enter .entry-wrap > :nth-child(3), .route-enter .pay-card > :nth-child(3) { animation-delay: .06s; }
+.route-enter .content-wrap > :nth-child(4), .route-enter .a-page > :nth-child(4), .route-enter .entry-wrap > :nth-child(4), .route-enter .pay-card > :nth-child(4) { animation-delay: .09s; }
+.route-enter .content-wrap > :nth-child(5), .route-enter .a-page > :nth-child(5), .route-enter .pay-card > :nth-child(5) { animation-delay: .12s; }
+.route-enter .content-wrap > :nth-child(n + 6), .route-enter .a-page > :nth-child(n + 6), .route-enter .pay-card > :nth-child(n + 6) { animation-delay: .12s; }
 
 /* Grids of cards stagger their own children. */
-.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .feature-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > * { animation: k-rise .5s var(--k-ease) backwards; }
-.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(2) { animation-delay: .06s; }
-.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(3) { animation-delay: .12s; }
-.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(4) { animation-delay: .18s; }
-.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(n + 5) { animation-delay: .24s; }
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .feature-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > * { animation: k-rise .3s var(--k-ease) backwards; }
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(2) { animation-delay: .03s; }
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(3) { animation-delay: .06s; }
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(4) { animation-delay: .09s; }
+.route-enter :is(.metric-row, .dashboard-grid, .roster-grid, .template-grid, .pr-grid, .badge-grid, .stat-grid, .aging-grid, .slot-grid, .photo-grid, .method-grid, .member-cards, .coach-cards, .pricing-grid, .lead-board) > :nth-child(n + 5) { animation-delay: .12s; }
 
 /* Lists and table rows cascade in. */
-.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .list-rows > *, .register-list > *, .leader-list > li, .insight-list > li) { animation: k-rise .45s var(--k-ease) backwards; }
+.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .list-rows > *, .register-list > *, .leader-list > li, .insight-list > li) { animation: k-rise .3s var(--k-ease) backwards; }
 .route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(2) { animation-delay: .04s; }
 .route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(3) { animation-delay: .08s; }
-.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(4) { animation-delay: .12s; }
+.route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(4) { animation-delay: .06s; }
 .route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(5) { animation-delay: .16s; }
 .route-enter :is(.data-table tbody tr, .t-list > li, .risk-list > li, .lead-list > li, .complaint-list > li, .notif-list > li, .booking-list > li, .leader-list > li):nth-child(n + 6) { animation-delay: .2s; }
 
 /* Bars, meters and progress fills grow from zero. */
 .route-enter :is(.meter, .usage-bar, .quota-meter, .split-bar, .slot-bar, .lp-day-rail) > span { transform-origin: left center; animation: k-grow-x .9s .2s var(--k-ease) backwards; }
 .route-enter .bar { transform-origin: bottom; animation: k-grow-y .8s var(--k-ease) backwards; }
-.route-enter .bar-group:nth-child(2) .bar { animation-delay: .04s; } .route-enter .bar-group:nth-child(3) .bar { animation-delay: .08s; } .route-enter .bar-group:nth-child(4) .bar { animation-delay: .12s; } .route-enter .bar-group:nth-child(5) .bar { animation-delay: .16s; } .route-enter .bar-group:nth-child(6) .bar { animation-delay: .2s; } .route-enter .bar-group:nth-child(n + 7) .bar { animation-delay: .24s; }
+.route-enter .bar-group:nth-child(2) .bar { animation-delay: .04s; } .route-enter .bar-group:nth-child(3) .bar { animation-delay: .08s; } .route-enter .bar-group:nth-child(4) .bar { animation-delay: .06s; } .route-enter .bar-group:nth-child(5) .bar { animation-delay: .16s; } .route-enter .bar-group:nth-child(6) .bar { animation-delay: .2s; } .route-enter .bar-group:nth-child(n + 7) .bar { animation-delay: .12s; }
 .route-enter :is(.heat-cell, .dot-slot, .visit-grid > *) { animation: k-pop .4s var(--k-ease) backwards; }
 .route-enter .badge, .route-enter .count-badge, .route-enter .nav-count, .route-enter .bell-count { animation: k-pop .45s .25s var(--k-ease) backwards; }
 
@@ -174,3 +174,22 @@
   .k-spot:hover, .btn:hover, .button-link:hover { transform: none !important; }
 }
 a.icon-button { display: grid; place-items: center; text-decoration: none; color: inherit; }
+
+
+/* Loading skeleton (each area loading.tsx): shown instantly on navigation. */
+.k-skel { position: relative; overflow: hidden; border-radius: 18px; background: var(--surface, #fff); border: 1px solid var(--line); box-shadow: 0 1px 0 #18211e08; }
+.k-skel::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, #d5f36a40, transparent); animation: k-sweep 1.1s ease-in-out infinite; }
+[data-theme='dark'] .k-skel { background: #ffffff0d; border-color: #ffffff12; }
+[data-theme='dark'] .k-skel::after { background: linear-gradient(90deg, transparent, #ffffff12, transparent); }
+.k-skel-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 18px; }
+.k-skel-hero { height: 300px; }
+.k-skel-side { height: 300px; }
+.k-skel-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 18px; }
+.k-skel-card { height: 110px; }
+.k-skel-line { height: 64px; margin-bottom: 12px; border-radius: 14px; }
+@media (max-width: 700px) {
+  .k-skel-grid, .k-skel-row { grid-template-columns: 1fr; }
+  .k-skel-hero { height: 220px; }
+  .k-skel-side, .k-skel-row .k-skel-card:nth-child(n + 2) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .k-skel::after { animation: none; } }

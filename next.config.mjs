@@ -8,6 +8,12 @@ const nextConfig = {
     unoptimized: true,
   },
   poweredByHeader: false,
+  experimental: {
+    // Pages you just visited reopen instantly for 30 seconds (going back and
+    // forth between Overview and Attendance). Saves call router.refresh(),
+    // which clears this cache, so data never lags behind your own changes.
+    staleTimes: { dynamic: 30 },
+  },
 }
 
 export default nextConfig

@@ -47,7 +47,16 @@
     "challengeProgress": "{done} / {target} workouts",
     "noChallenge": "No challenge running",
     "noChallengeNote": "Your gym will post the next one soon.",
-    "paused": "Your gym's Rep+ access is paused. Please contact the gym."
+    "paused": "Your gym's Rep+ access is paused. Please contact the gym.",
+    "lbTitle": "Leaderboard - this month",
+    "lbAll": "See full board",
+    "lbYou": "You are #{rank} of {total}",
+    "lbChase": "{count} more workouts to pass {name}",
+    "lbChaseOne": "1 more workout to pass {name}",
+    "lbLeading": "You are #1. Everyone is chasing you now.",
+    "lbJoin": "Check in today to get on the board.",
+    "lbWorkouts": "{count} workouts",
+    "lbHidden": "You are hidden from the board. Turn it on in Profile to compete."
   },
   "motivation": [
     "One more rep. One more day. You are building something.",
@@ -431,5 +440,33 @@
     "done": "Thank you! {gym} will call you soon.",
     "invalid": "This gym page is not available.",
     "lang": "Language"
+  },
+  "qry": {
+    "title": "Ask your trainer",
+    "subtitle": "Diet plan, workout split, plan change or PT. Your trainer replies here.",
+    "to": "Goes to {name}",
+    "toOwner": "Goes to the gym owner",
+    "topic": "What is it about?",
+    "DIET": "Diet plan",
+    "WORKOUT": "Workout split",
+    "PLAN": "Membership plan",
+    "PT": "Personal training",
+    "OTHER": "Something else",
+    "placeholder": "Example: Please update my diet plan, I want to cut fat.",
+    "send": "Send",
+    "sent": "Sent. You will get a notification when they reply.",
+    "mine": "My queries",
+    "empty": "No queries yet. Ask anything about your training.",
+    "you": "You",
+    "OPEN": "Waiting",
+    "ANSWERED": "Replied",
+    "CLOSED": "Done",
+    "replyPlaceholder": "Write a reply",
+    "reply": "Reply",
+    "newReply": "New reply",
+    "homeCard": "Need a diet plan or a new split?",
+    "homeCardBtn": "Ask your trainer",
+    "homeUnread": "{count} new replies",
+    "complaintHint": "For broken equipment or a complaint, use Feedback in Profile."
   }
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { FileText, Plus, Search } from 'lucide-react'
+import { FileText, Plus, Search, Upload } from 'lucide-react'
 import { initials } from '@/components/brand'
 import { StatusBadge } from '@/components/kit/status-badge'
 import { Pager } from '@/components/kit/pager'
@@ -48,12 +48,16 @@ export async function MembersListView({ ctx, base, searchParams }: { ctx: StaffP
   }
   const parsed = memberListQuerySchema.safeParse(searchParams)
   const filter = parsed.success ? parsed.data : { page: 1 }
-  const result = await listMembers(tenantDb(ctx.gym.id), filter)
+  const [result, branches] = await Promise.all([
+    listMembers(tenantDb(ctx.gym.id), filter),
+    tenantDb(ctx.gym.id).branch.findMany({ where: { archived: false }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], select: { id: true, name: true } }),
+  ])
   const total = Object.values(result.counts).reduce((sum, value) => sum + (value ?? 0), 0)
-  const chip = (status?: string) => {
+  const chip = (status?: string, branchId: string | undefined = filter.branchId) => {
     const query = new URLSearchParams()
     if (filter.q) query.set('q', filter.q)
     if (status) query.set('status', status)
+    if (branchId) query.set('branchId', branchId)
     return `${base}/members${query.toString() ? `?${query}` : ''}`
   }
   const canWrite = hasPermission(ctx.claims.perms, 'members.write')
@@ -64,16 +68,36 @@ export async function MembersListView({ ctx, base, searchParams }: { ctx: StaffP
         <form className="toolbar" method="get">
           <input name="q" defaultValue={filter.q ?? ''} placeholder="Search name, phone or member ID" aria-label="Search" />
           {filter.status ? <input type="hidden" name="status" value={filter.status} /> : null}
+          {filter.branchId ? <input type="hidden" name="branchId" value={filter.branchId} /> : null}
           <button className="btn btn-dark" type="submit">
             <Search /> Search
           </button>
         </form>
         {canWrite ? (
-          <Link className="btn btn-lime" href={`${base}/members/new`}>
-            <Plus /> Add {ctx.gym.athleteLabel.toLowerCase()}
-          </Link>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {base === '/owner' ? (
+              <Link className="btn btn-outline" href="/owner/members/import">
+                <Upload /> Import from old software
+              </Link>
+            ) : null}
+            <Link className="btn btn-lime" href={`${base}/members/new`}>
+              <Plus /> Add {ctx.gym.athleteLabel.toLowerCase()}
+            </Link>
+          </div>
         ) : null}
       </div>
+      {branches.length > 1 ? (
+        <nav className="branch-switch" aria-label="Branch">
+          <Link href={chip(filter.status, '')} className={filter.branchId ? '' : 'on'}>
+            All branches
+          </Link>
+          {branches.map((branch) => (
+            <Link key={branch.id} href={chip(filter.status, branch.id)} className={filter.branchId === branch.id ? 'on' : ''}>
+              {branch.name}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
       <div className="chip-row">
         <Link className={!filter.status ? 'active' : ''} href={chip()}>
           All<span>{total}</span>

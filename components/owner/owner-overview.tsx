@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { CalendarClock, Dumbbell, Flame, MoreHorizontal, Play, QrCode, Receipt, Users, Wallet, Zap, type LucideIcon } from 'lucide-react'
 import { initials } from '@/components/brand'
 import { describeChange, type OwnerOverview } from '@/lib/owner/overview'
@@ -29,7 +30,7 @@ function crowdWord(percent: number): string {
   return 'Packed'
 }
 
-export function OwnerOverviewView({ data, firstName, dateLine, greeting, athleteLabelPlural, deskTools }: { data: OwnerOverview; firstName: string; dateLine: string; greeting: string; athleteLabelPlural: string; deskTools: boolean }) {
+export function OwnerOverviewView({ data, firstName, dateLine, greeting, athleteLabelPlural, deskTools, branchName = null, compare = null }: { data: OwnerOverview; firstName: string; dateLine: string; greeting: string; athleteLabelPlural: string; deskTools: boolean; branchName?: string | null; compare?: ReactNode }) {
   const max = Math.max(1, ...data.week.map((day) => day.count))
   const top = Math.max(10, Math.ceil(max / 10) * 10)
   const peak = data.week.reduce((a, b) => (b.count > a.count ? b : a), data.week[0])
@@ -47,7 +48,7 @@ export function OwnerOverviewView({ data, firstName, dateLine, greeting, athlete
             <em>{firstName}.</em>
           </h1>
           <p>
-            {dateLine}. {data.todayCheckIns} check-ins so far, {data.floor.inside} on the floor right now.
+            {dateLine}. {branchName ? `${branchName}: ` : ''}{data.todayCheckIns} check-ins so far, {data.floor.inside} on the floor right now.
           </p>
           <div className="hero-actions">
             {deskTools ? (
@@ -107,6 +108,7 @@ export function OwnerOverviewView({ data, firstName, dateLine, greeting, athlete
         <Metric label="Renewals in 7 days" value={String(data.renewalsNext7Days)} note="Plans ending this week" icon={CalendarClock} />
         <Metric label="At risk" value={String(data.atRisk)} note="To call this week" icon={Flame} accent="orange" />
       </div>
+      {compare}
 
       <section className="panel attendance-panel">
         <div className="panel-heading">

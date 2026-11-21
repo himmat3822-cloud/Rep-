@@ -11,6 +11,10 @@ import { CoachCards } from '@/components/athlete/coach'
 import { formatIstDate } from '@/lib/time'
 import { requireAthletePage } from '@/lib/auth/page'
 import { getAthleteHome } from '@/lib/athlete/home'
+import { leaderboard } from '@/lib/athlete/progress'
+import { HomeLeaderboard } from '@/components/athlete/home-leaderboard'
+import { AskTrainerCard } from '@/components/athlete/ask-trainer-card'
+import { memberQueries } from '@/lib/queries/service'
 import { translate } from '@/lib/i18n'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -44,6 +48,9 @@ export default async function AthleteHomePage({ params }: { params: Promise<{ sl
     db.ptSession.findMany({ where: { athleteId: athlete.id, athleteSignedAt: null, athleteDisputedAt: null }, orderBy: { sessionAt: 'desc' }, take: 10, include: { trainer: { select: { name: true } } } }),
     athlete.trainerId ? db.gymUser.findFirst({ where: { id: athlete.trainerId }, select: { name: true } }) : Promise.resolve(null),
   ])
+  const showBoard = config.features.includes('leaderboard') && config.settings.features.leaderboard
+  const [board, queries] = await Promise.all([showBoard ? leaderboard(db, athlete.id) : Promise.resolve(null), memberQueries(db, athlete.id)])
+  const unreadReplies = queries.filter((query) => query.unreadForMember).length
   const short = (d: Date) => formatIstDate(d, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
   const methods = enabledMethods(config.settings.attendance, config.features)
   const lang = athlete.language
@@ -70,8 +77,9 @@ export default async function AthleteHomePage({ params }: { params: Promise<{ sl
         note={note ? { body: note.body, by: note.trainer.name.split(' ')[0], date: short(note.createdAt) } : null}
         sessions={sessions.map((s) => ({ id: s.id, trainer: s.trainer.name.split(' ')[0], minutes: s.durationMin, date: short(s.sessionAt) }))}
       />
+      <AskTrainerCard slug={slug} lang={lang} unread={unreadReplies} />
       <SaveToday slug={slug} workout={data.todayWorkout} />
-      <AthleteHomeView slug={slug} data={data} name={athlete.name} lang={athlete.language} athleteLabel={gym.athleteLabel} streak={athlete.streakDays} bestStreak={athlete.bestStreak} />
+      <AthleteHomeView slug={slug} data={data} name={athlete.name} lang={athlete.language} athleteLabel={gym.athleteLabel} streak={athlete.streakDays} bestStreak={athlete.bestStreak} board={board ? <HomeLeaderboard slug={slug} lang={lang} board={board} /> : null} />
     </AthleteChrome>
   )
 }

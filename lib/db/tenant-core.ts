@@ -51,6 +51,8 @@ export const TENANT_MODELS: ReadonlySet<string> = new Set([
   'AthleteBadge',
   'MotivationLine',
   'Complaint',
+  'MemberQuery',
+  'QueryMessage',
   'WorkoutSplit',
   'TrainerNote',
   'PtSession',

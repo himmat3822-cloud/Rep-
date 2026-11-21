@@ -113,7 +113,7 @@ const GYMS: GymSpec[] = [
     planCode: 'elite',
     status: 'ACTIVE',
     invoicePrefix: 'TSF',
-    athleteCount: 112,
+    athleteCount: 186,
     owner: { name: 'Jagtar Singh', phone: '+919876530000', email: 'jagtar@thesharpfitness.in' },
     desk: [],
     trainers: [
@@ -121,7 +121,10 @@ const GYMS: GymSpec[] = [
       { name: 'Lakshay', phone: '+919876530012', commissionPct: 35 },
       { name: 'Daniel', phone: '+919876530013', commissionPct: 35 },
     ],
-    branches: [{ name: 'Shivalik City', address: 'Shivalik City, Sector 127, Kharar', lat: 30.7356, lng: 76.655, capacity: 60 }],
+    branches: [
+      { name: 'Shivalik City', address: 'Shivalik City, Sector 127, Kharar', lat: 30.7356, lng: 76.655, capacity: 60 },
+      { name: 'Zirakpur', address: 'VIP Road, Zirakpur, Punjab 140603', lat: 30.6425, lng: 76.8173, capacity: 80 },
+    ],
     demoAthlete: { name: 'Manmeet Singh', phone: '+919876531001', language: 'EN' },
     extraAthletes: [{ name: 'Surajdeep', phone: '+919876531002', language: 'PA' }],
     ownerTrains: true,
@@ -794,6 +797,7 @@ async function seedGym(spec: GymSpec) {
       { gymId: gym.id, branchId: branches[0].id, athleteId: athleteIds[7]?.id, kind: 'CLEANLINESS', title: 'Washroom needs attention in the evening', body: 'Around 7 PM the washroom is not clean.', status: 'IN_PROGRESS' },
     ],
   })
+  await seedQueries(gym.id, owner.id, athleteIds)
   const expenseRows: Prisma.ExpenseCreateManyInput[] = []
   for (let m = 0; m < 6; m += 1) {
     const spentOn = dateOnlyDaysFromToday(-(m * 30 + 3))
@@ -1030,6 +1034,30 @@ async function seedGrowth(gymId: string, spec: GymSpec) {
 // Phase 7: saved workout plans, PT sessions (confirmed, waiting, one
 // disputed) and trainer notes the members see in their app.
 // ---------------------------------------------------------------------------
+// Member queries ("Ask your trainer"): one answered diet request, one open
+// split request, one plan question for the owner, one closed PT question.
+async function seedQueries(gymId: string, ownerId: string, athletes: { id: string; trainerId: string | null; branchId: string; name: string }[]) {
+  const withTrainer = athletes.filter((athlete) => athlete.trainerId)
+  const noTrainer = athletes.filter((athlete) => !athlete.trainerId)
+  const plan: { athlete: (typeof athletes)[number] | undefined; topic: 'DIET' | 'WORKOUT' | 'PLAN' | 'PT'; status: 'OPEN' | 'ANSWERED' | 'CLOSED'; hoursAgo: number; ask: string; answer?: string }[] = [
+    { athlete: athletes[0], topic: 'DIET', status: 'ANSWERED', hoursAgo: 20, ask: 'Please update my diet plan. I want to cut fat but keep my strength for bench.', answer: 'Done. Check Schedule: 4 meals, 140 g protein, carbs mostly before training. We review in 2 weeks.' },
+    { athlete: athletes[1], topic: 'WORKOUT', status: 'OPEN', hoursAgo: 3, ask: 'Can you give me a 5 day split? My current one feels too easy now.' },
+    { athlete: withTrainer[4], topic: 'DIET', status: 'OPEN', hoursAgo: 6, ask: 'I am vegetarian. Can my diet plan have more protein without eggs?' },
+    { athlete: noTrainer[0], topic: 'PLAN', status: 'OPEN', hoursAgo: 26, ask: 'Can I change my monthly plan to quarterly from next month?' },
+    { athlete: withTrainer[7], topic: 'PT', status: 'CLOSED', hoursAgo: 72, ask: 'Is there a PT slot at 7 AM on weekdays?', answer: 'Yes, 7 AM Mon to Fri is free. Booked you from Monday.' },
+  ]
+  for (const item of plan) {
+    if (!item.athlete) continue
+    const asked = new Date(NOW.getTime() - item.hoursAgo * 3600000)
+    const answered = item.answer ? new Date(asked.getTime() + 2 * 3600000) : null
+    const query = await db.memberQuery.create({
+      data: { gymId, branchId: item.athlete.branchId, athleteId: item.athlete.id, trainerId: item.athlete.trainerId, topic: item.topic, status: item.status, createdAt: asked, lastMessageAt: answered ?? asked, athleteSeenAt: item.status === 'CLOSED' ? new Date() : asked },
+    })
+    await db.queryMessage.create({ data: { gymId, queryId: query.id, author: 'ATHLETE', body: item.ask, createdAt: asked } })
+    if (item.answer && answered) await db.queryMessage.create({ data: { gymId, queryId: query.id, author: 'STAFF', staffId: item.athlete.trainerId ?? ownerId, body: item.answer, createdAt: answered } })
+  }
+}
+
 async function seedTrainerDesk(gymId: string) {
   const trainers = await db.gymUser.findMany({ where: { gymId, kind: 'TRAINER' }, orderBy: { phone: 'asc' } })
   if (trainers.length === 0) return
@@ -1103,7 +1131,7 @@ async function main() {
     await db.platformCounter.upsert({ where: { key: `invoice:${fy}` }, create: { key: `invoice:${fy}`, value }, update: { value: Math.max(value, existing?.value ?? 0) } })
   }
   console.info('')
-  console.info('The Sharp Fitness (/g/sharp-fitness):')
+  console.info('The Sharp Fitness (/g/sharp-fitness) - branches Shivalik City and Zirakpur:')
   console.info(`  Owner Jagtar Singh:   jagtar@thesharpfitness.in / ${DEMO_PASSWORD}   phone +91 98765 30000 (also desk + trainer)`)
   console.info('  Trainers:             Inder +91 98765 30011, Lakshay +91 98765 30012, Daniel +91 98765 30013')
   console.info('  Members:              Manmeet Singh +91 98765 31001, Surajdeep +91 98765 31002')

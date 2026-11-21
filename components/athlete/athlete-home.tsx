@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { CalendarCheck, CalendarDays, CreditCard, Dumbbell, Flame, Megaphone, Play, Quote, Wallet } from 'lucide-react'
 import type { AthleteHome } from '@/lib/athlete/home'
 import { translator, type Lang } from '@/lib/i18n'
@@ -12,7 +13,7 @@ function greetingKey(): 'goodMorning' | 'goodAfternoon' | 'goodEvening' {
   return 'goodEvening'
 }
 
-export function AthleteHomeView({ slug, data, name, lang, athleteLabel, streak, bestStreak }: { slug: string; data: AthleteHome; name: string; lang: Lang; athleteLabel: string; streak: number; bestStreak: number }) {
+export function AthleteHomeView({ slug, data, name, lang, athleteLabel, streak, bestStreak, board }: { slug: string; data: AthleteHome; name: string; lang: Lang; athleteLabel: string; streak: number; bestStreak: number; board?: ReactNode }) {
   const base = `/g/${slug}`
   const t = translator(lang, { label: athleteLabel })
   const crowdText = data.crowd.percent < 35 ? t('home', 'crowdQuiet') : data.crowd.percent < 75 ? t('home', 'crowdBusy') : t('home', 'crowdPacked')
@@ -39,6 +40,8 @@ export function AthleteHomeView({ slug, data, name, lang, athleteLabel, streak, 
           <span>{data.motivation}</span>
         </div>
       </section>
+
+      {board}
 
       <div className="member-cards">
         <section className="member-card workout-card">

@@ -100,6 +100,32 @@ Follow section 4 below (git init, add, commit, push to a **private** repository)
 | Surajdeep (member, Punjabi) | `/g/sharp-fitness/login` | phone `9876531002` |
 | You (super admin) | `/admin/login` | `ADMIN_SEED_ID`, your password and the TOTP code |
 
+### F2. Updating the live showcase after new code
+
+```powershell
+pnpm install
+```
+
+```powershell
+pnpm prod:migrate
+```
+
+```powershell
+pnpm prod:demo
+```
+
+Then push to GitHub; Vercel redeploys by itself. `prod:demo` rebuilds The Sharp Fitness (both branches) and logs everyone out of the demo once.
+
+### Moving a real gym from its old software
+
+1. In the old software, open the members list and use its Export / Download / Excel button. Export everyone, including expired members.
+2. In Rep+: Members > Import from old software. Upload the .xlsx or .csv as it is.
+3. Match the columns (most are matched automatically). Only name and mobile number are required; plan, start date, expiry date, amount paid and balance are used when present.
+4. Check rows: nothing is saved yet. Rows with a bad number, duplicates and people already in Rep+ are listed and skipped.
+5. Import. Members with a running plan become active, expired ones land as expired (your renewal call list), balances become open dues. Plans the gym does not have yet are created from the file; fix their prices in Membership plans.
+
+No export button? Download the template on the import page and fill it in Excel or Google Sheets. Old .xls files: open in Excel and Save As .xlsx first.
+
 ### G. Before a real gym uses the site
 Delete `DEMO_LOGIN_CODE` and `DEMO_LOGIN_PHONES` from Vercel, add the WhatsApp keys and your domain (`ROOT_DOMAIN`, `APP_URL`), and redeploy.
 

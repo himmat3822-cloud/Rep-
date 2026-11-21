@@ -159,6 +159,27 @@ enum ComplaintKind {
   OTHER
 }
 
+// Member questions to their trainer (diet plan, workout split ...). Kept
+// apart from complaints: these are requests, not problems.
+enum QueryTopic {
+  DIET
+  WORKOUT
+  PLAN
+  PT
+  OTHER
+}
+
+enum QueryStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+enum QueryAuthor {
+  ATHLETE
+  STAFF
+}
+
 enum ComplaintStatus {
   OPEN
   IN_PROGRESS
@@ -994,6 +1015,39 @@ model Complaint {
   createdAt    DateTime        @default(now())
 
   @@index([gymId, status])
+}
+
+model MemberQuery {
+  id            String         @id @default(cuid())
+  gymId         String
+  branchId      String?
+  athleteId     String
+  // Trainer of the member when asked; null goes to the owner.
+  trainerId     String?
+  topic         QueryTopic
+  status        QueryStatus    @default(OPEN)
+  lastMessageAt DateTime       @default(now())
+  athleteSeenAt DateTime?
+  createdAt     DateTime       @default(now())
+  messages      QueryMessage[]
+
+  @@index([gymId, status])
+  @@index([gymId, trainerId, status])
+  @@index([gymId, athleteId])
+}
+
+model QueryMessage {
+  id        String      @id @default(cuid())
+  gymId     String
+  queryId   String
+  query     MemberQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  author    QueryAuthor
+  staffId   String?
+  body      String
+  createdAt DateTime    @default(now())
+
+  @@index([queryId, createdAt])
+  @@index([gymId])
 }
 
 // ---------------------------------------------------------------------------
