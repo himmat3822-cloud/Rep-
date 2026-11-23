@@ -132,7 +132,7 @@
 .k-ripple { position: absolute; left: 0; top: 0; width: 220%; aspect-ratio: 1; border-radius: 50%; background: currentColor; opacity: .18; transform: translate(-50%, -50%) scale(0); pointer-events: none; animation: k-ripple .6s ease-out forwards; }
 
 :is(.field, .toolbar, .lead-panel, .risk-outcome, .expense-form) :is(input, select, textarea) { transition: border-color .2s ease, box-shadow .25s ease, background .2s ease; }
-:is(.field, .toolbar, .lead-panel, .risk-outcome, .expense-form) :is(input, select, textarea):focus { border-color: #a9cb35; box-shadow: 0 0 0 4px #d5f36a40, 0 0 18px -4px #d5f36a99; background: #fff; }
+:is(.field, .toolbar, .lead-panel, .risk-outcome, .expense-form) :is(input, select, textarea):focus { border-color: #a9cb35; box-shadow: 0 0 0 4px #d5f36a40, 0 0 18px -4px #d5f36a99; background: var(--field-focus, #fff); color: var(--text); }
 
 .tab-links a.active, .seg .on, .seg a.on { box-shadow: 0 6px 18px -10px #18211ecc; }
 .live-dot { position: relative; }
@@ -157,7 +157,7 @@
 .k-bell-pop { position: absolute; z-index: 60; right: 0; top: calc(100% + 10px); width: min(360px, 90vw); background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 30px 60px -24px #18211e66; padding: 8px; transform-origin: top right; animation: k-pop .28s var(--k-ease); }
 .k-bell-pop header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 12px; font-weight: 800; }
 .k-bell-pop header button { background: none; border: 0; color: #7b8e36; font-size: 11px; font-weight: 700; cursor: pointer; }
-.k-bell-pop ul { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow: auto; }
+.k-bell-pop ul { list-style: none; margin: 0; padding: 0; max-height: min(360px, calc(100dvh - 170px)); overflow: auto; overscroll-behavior: contain; }
 .k-bell-pop li a, .k-bell-pop li > div { display: block; padding: 10px; border-radius: 10px; text-decoration: none; color: var(--ink); font-size: 12px; }
 .k-bell-pop li a:hover { background: #f3f7e8; }
 .k-bell-pop li.unread a, .k-bell-pop li.unread > div { background: #f6fae9; }

@@ -267,3 +267,77 @@ body:has(.topbar .k-switch, .athlete-top .k-switch) .k-switch-floating { display
 [data-theme='dark'] .challenge-card { background: linear-gradient(160deg, #2a1d33, #141019); border-color: #c792ea33; }
 [data-theme='dark'] .challenge-card > strong { color: #d8b0f0; }
 [data-theme='dark'] .streak-chip { background: #ff9c5d1f; color: #ffb27f; }
+
+
+/* ---------------------------------------------------------------- mobile + night fixes (Nov 2026 sweep) */
+/* Typed text stays readable while a field is focused: night mode used to
+   flash a white field behind light text (phone number, OTP, search). */
+:root { --field-focus: #ffffff; }
+[data-theme='dark'] { --field-focus: #16201c; }
+[data-theme='dark'] :is(input, select, textarea):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]) { color: var(--text); caret-color: var(--lime); }
+[data-theme='dark'] :is(input, textarea)::placeholder { color: #7e8b82; opacity: 1; }
+[data-theme='dark'] select option { background: #111916; color: var(--text); }
+
+/* Browser autofill (saved phone numbers) paints a pale yellow box; keep the
+   theme colours instead, in both modes. */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, select:-webkit-autofill {
+  -webkit-text-fill-color: var(--text, #17201d);
+  -webkit-box-shadow: 0 0 0 1000px var(--field, #fbfcf8) inset;
+  box-shadow: 0 0 0 1000px var(--field, #fbfcf8) inset;
+  caret-color: var(--text, #17201d);
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* Small grey labels (table headers, page kickers) were below readable
+   contrast in day mode. */
+:root:not([data-theme='dark']) { --text-3: #6b766e; }
+
+/* Orange avatar and active chart bars keep dark ink at night. */
+.profile-avatar, .top-avatar { color: #18211e; }
+:is(.bar-active, .bar.bar-active) { --text: #18211e; color: #18211e; }
+.bar-active span { color: #18211e; }
+
+/* WhatsApp preview card: it is a light "phone" card in both themes. */
+[data-theme='dark'] .wa-preview { background: #1b2521; }
+[data-theme='dark'] .wa-preview-head, [data-theme='dark'] .wa-preview .hint { color: var(--text-2); }
+[data-theme='dark'] .wa-preview-head strong { color: var(--text); }
+
+@media (max-width: 700px) {
+  /* iPhone zooms the whole page when a field under 16px is tapped; 16px stops it. */
+  :is(input, select, textarea):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]) { font-size: 16px !important; }
+  .otp-input { font-size: 22px !important; }
+
+  /* Notifications panel: full width under the top bar instead of hanging off the left edge. */
+  /* (selectors doubled up so they win over motion.css, which loads later) */
+  .top-actions .k-bell { position: static; }
+  .top-actions .k-bell .k-bell-pop { position: fixed; left: 10px; right: 10px; top: 66px; width: auto; max-height: calc(100dvh - 86px); display: flex; flex-direction: column; transform-origin: top center; }
+  .top-actions .k-bell .k-bell-pop ul { max-height: none; flex: 1; min-height: 0; }
+
+  /* Owner hero: the floating dumbbell sat on top of the "check-ins so far" line. */
+  .hero-card .hero-orbit { top: 12px; right: -70px; opacity: .3; z-index: 0; pointer-events: none; }
+  .hero-card > :not(.hero-orbit) { position: relative; z-index: 1; }
+
+  /* Trainer "Nudge" box: keep it inside the screen. */
+  .nudge-pop { position: fixed; left: 10px; right: 10px; top: auto; bottom: calc(76px + env(safe-area-inset-bottom)); width: auto; z-index: 70; }
+}
+
+/* Member home greeting: the lime name was nearly invisible on the light
+   background; day mode uses the deep lime ink, night keeps bright lime. */
+:root:not([data-theme='dark']) .member-welcome h1 em { color: var(--lime-text); }
+.member-welcome p, .member-welcome .eyebrow { color: var(--text-3); }
+
+/* Staff login "WhatsApp OTP / Email and password" switch: the selected side
+   was dark-on-dark at night. */
+[data-theme='dark'] .auth-tabs button.active { background: var(--lime); color: #18211e; }
+[data-theme='dark'] .auth-tabs button:not(.active) { color: var(--text-2); }
+
+/* Selected tabs, chips and segments are painted with --ink (near black). At
+   night that is the same shade as the cards, so the selection disappeared.
+   Night mode marks the selected one in lime instead. */
+[data-theme='dark'] :is(
+  .mobile-role-row button.active, .auth-tabs button.active, .tab-links a.active, .tab-links button.active,
+  .chip-row a.active, .chip-row .chip.on, .seg .on, .seg a.on, .week-day.on, .a-tabs a.on,
+  .q-topics button.on, .branch-switch a.on, .import-steps li.done span
+) { background: var(--lime); border-color: var(--lime); color: #18211e; }
+[data-theme='dark'] .branch-switch a.on svg { color: #18211e; }
+[data-theme='dark'] .week-day.on * { color: #18211e; }

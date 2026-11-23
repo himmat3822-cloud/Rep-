@@ -752,3 +752,5 @@ nav.a-tabs a { width:auto; display:inline-flex; }
 .import-result.error { color: var(--red-text, #c0392b); }
 .tab-links button { background: transparent; border: 0; cursor: pointer; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
 .tab-links button.active { background: var(--ink); color: #fff; }
+.q-card .sub { display: block; margin-top: 2px; }
+.q-card .q-member { margin-left: 4px; }
