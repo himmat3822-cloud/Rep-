@@ -76,7 +76,7 @@ export function MyQr({ slug, name, labels }: { slug: string; name: string; label
 
   return (
     <div className="qr-card">
-      <p className="kicker">KASRAT CHECK-IN</p>
+      <p className="kicker">REP+ CHECK-IN</p>
       <h2>{name}</h2>
       <p className="muted">{labels.showAtDesk}</p>
       {error ? <p className="field-error" style={{ marginTop: 16 }}>{error}</p> : image ? <img className="qr-img" src={image} alt="Check-in QR code" /> : <div className="qr-img" style={{ background: 'var(--soft)', borderRadius: 12 }} />}

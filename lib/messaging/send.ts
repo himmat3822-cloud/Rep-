@@ -40,9 +40,11 @@ export interface GymMessage {
   ignoreQuietHours?: boolean
   // Try web push first (title + app path); WhatsApp only as a fallback.
   pushFirst?: { title: string; path: string }
+  // App notification only: never falls back to WhatsApp (free sends).
+  pushOnly?: boolean
 }
 
-export type SendOutcome = 'sent' | 'duplicate' | 'quiet_hours' | 'quota' | 'opted_out' | 'paused' | 'failed'
+export type SendOutcome = 'sent' | 'duplicate' | 'quiet_hours' | 'quota' | 'opted_out' | 'paused' | 'failed' | 'no_push'
 
 export interface SendOutcomeResult {
   outcome: SendOutcome
@@ -72,6 +74,7 @@ export async function sendGymMessage(db: PrismaClient, ctx: MessagingContext, me
     const pushed = await tryPush(db, ctx, message, body, now)
     if (pushed) return pushed
   }
+  if (message.pushOnly) return { outcome: 'no_push' }
   if (!critical && def.audience === 'member' && message.to.optedOut) return { outcome: 'opted_out' }
 
   let logId: string

@@ -54,7 +54,7 @@ export default async function OwnerBillingPage() {
       <div className="two-col">
         <div className="stack">
           <div className="plan-hero">
-            <p className="kicker">YOUR KASRAT PLAN</p>
+            <p className="kicker">YOUR REP+ PLAN</p>
             <h2>
               {sub.plan.name} - {sub.cycle === 'ANNUAL' ? 'annual' : 'monthly'} <StatusBadge value={sub.status} />
             </h2>
@@ -73,9 +73,9 @@ export default async function OwnerBillingPage() {
           </div>
 
           <section className="panel">
-            <p className="kicker">PAY KASRAT</p>
+            <p className="kicker">PAY REP+</p>
             <h2>{sub.status === 'TRIAL' ? 'Pay any time before your trial ends' : unpaid ? 'Pay now to switch everything back on' : 'Pay early for the next period'}</h2>
-            <div className="two-col" style={{ marginTop: 14, gridTemplateColumns: qrSvg ? '190px 1fr' : '1fr' }}>
+            <div className={`two-col pay-grid ${qrSvg ? 'has-qr' : ''}`} style={{ marginTop: 14 }}>
               {qrSvg ? <div dangerouslySetInnerHTML={{ __html: qrSvg }} /> : null}
               <div className="pay-box">
                 {details.upiId ? (

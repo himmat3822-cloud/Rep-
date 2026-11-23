@@ -4,9 +4,9 @@ import { FeatureLocked } from '@/components/growth/locked'
 import { ChallengeForm, DeleteChallenge } from '@/components/growth/actions'
 import { StatusBadge } from '@/components/kit/status-badge'
 import { requireStaffPage } from '@/lib/auth/page'
-import { tenantDb } from '@/lib/db/tenant'
 import { getGymFeatures } from '@/lib/gym/features'
 import { formatIstDate, istDateOnly } from '@/lib/time'
+import { pageDb } from '@/lib/owner/branch-view'
 
 export const metadata: Metadata = { title: 'Challenges - Rep+' }
 
@@ -21,7 +21,7 @@ export default async function ChallengesPage() {
       </StaffShell>
     )
   }
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const today = istDateOnly()
   const challenges = await db.challenge.findMany({ orderBy: { startsAt: 'desc' }, take: 20 })
   const entries = challenges.length ? await db.challengeEntry.findMany({ where: { challengeId: { in: challenges.map((c) => c.id) } }, orderBy: { progress: 'desc' } }) : []

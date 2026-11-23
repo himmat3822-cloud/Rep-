@@ -1,5 +1,6 @@
 import {
   MessageCircleQuestion,
+  Send,
   BarChart3,
   Building2,
   CalendarDays,
@@ -39,6 +40,8 @@ export const NAV_ICONS = {
   announcements: Megaphone,
   complaints: Wrench,
   queries: MessageCircleQuestion,
+  branch: Building2,
+  broadcast: Send,
   scanner: QrCode,
   quickAdd: UserPlus,
   collect: CreditCard,

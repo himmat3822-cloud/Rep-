@@ -6,9 +6,9 @@ import { Pager } from '@/components/kit/pager'
 import { RemindButton } from '@/components/owner/remind-button'
 import { ClaimsQueue, FreezeQueue, pendingCounts } from '@/components/owner/request-queues'
 import { requireStaffPage } from '@/lib/auth/page'
-import { tenantDb } from '@/lib/db/tenant'
 import { formatInr } from '@/lib/money'
 import { formatIstDate, istDateOnly, istStartOfMonth } from '@/lib/time'
+import { pageDb } from '@/lib/owner/branch-view'
 
 export const metadata: Metadata = { title: 'Payments and dues - Rep+' }
 
@@ -19,7 +19,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
   const ctx = await requireStaffPage(['OWNER'])
   const { tab = 'payments', page: rawPage } = await searchParams
   const page = Math.max(1, Number(rawPage) || 1)
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const monthStart = istStartOfMonth()
   const today = istDateOnly()
 

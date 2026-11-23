@@ -48,6 +48,10 @@ export const gymSettingsSchema = z.object({
       dailyMotivation: z.boolean().default(true),
     })
     .default({ duesAuto: true, tone: 'friendly', sendHour: 10, renewalReminders: true, renewalDays: [7, 1], slotReminders: true, birthdayWishes: true, anniversaryWishes: true, weeklyReport: true, dailyMotivation: true }),
+  // Owners with 2+ branches: 'combined' shows all branches together (with a
+  // branch switch on the overview); 'separate' asks which branch to open and
+  // then shows only that branch on every page.
+  ownerView: z.enum(['combined', 'separate']).default('combined'),
   renewEarlyDiscountPct: z.number().int().min(0).max(50).default(0),
   referralRewardDays: z.number().int().min(0).max(60).default(7),
   invoicePrefix: z.string().regex(/^[A-Z]{1,4}$/).optional(),

@@ -118,6 +118,17 @@ export const TEMPLATES = {
     example: ['Arjun', 'Vikram', 'We have not seen you for 6 days. Your spot on the floor is waiting.', 'Forge Fitness'],
     label: 'Trainer nudge',
   },
+  // Owner bulk messages and automatic rules: {{3}} is the preset line in the
+  // member's language, or the owner's own words.
+  kasrat_gym_update: {
+    name: 'kasrat_gym_update',
+    category: 'MARKETING',
+    audience: 'member',
+    priority: 'low',
+    params: ['member first name', 'gym name', 'message'],
+    example: ['Arjun', 'Forge Fitness', 'We have not seen you for 7 days. Your spot on the floor is waiting, come in today.'],
+    label: 'Message from the gym',
+  },
   kasrat_quota_warning: {
     name: 'kasrat_quota_warning',
     category: 'UTILITY',
@@ -209,4 +220,15 @@ export type NudgeKind = (typeof NUDGE_KINDS)[number]
 export function nudgeLine(lang: WaLang, kind: NudgeKind, days: number): string {
   const template = (NUDGES[lang] ?? NUDGES.EN)[kind] ?? NUDGES.EN[kind]
   return template.replace('{days}', String(days))
+}
+
+// Ready-made lines for bulk messages and automatic rules, in every member's
+// own language. {name}, {gym} and {days} are filled per member.
+const PRESETS: Record<WaLang, Record<string, string>> = { EN: en.waPreset, HI: (hi as typeof en).waPreset, PA: (pa as typeof en).waPreset }
+export const PRESET_KEYS = ['miss_you', 'welcome', 'renew', 'ending', 'consistency', 'challenge', 'dues'] as const
+export type PresetKey = (typeof PRESET_KEYS)[number]
+
+export function presetLine(lang: WaLang, key: PresetKey, vars: { name: string; gym: string; days: number }): string {
+  const template = (PRESETS[lang] ?? PRESETS.EN)[key] ?? PRESETS.EN[key]
+  return template.replace(/\{(name|gym|days)\}/g, (_match, name: 'name' | 'gym' | 'days') => String(vars[name]))
 }

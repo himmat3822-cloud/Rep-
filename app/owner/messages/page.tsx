@@ -5,7 +5,6 @@ import { StaffShell } from '@/components/staff/staff-shell'
 import { Pager } from '@/components/kit/pager'
 import { StatusBadge } from '@/components/kit/status-badge'
 import { requireStaffPage } from '@/lib/auth/page'
-import { tenantDb } from '@/lib/db/tenant'
 import { loadGymConfig } from '@/lib/gym/context'
 import { whatsappConfigured } from '@/lib/integrations/whatsapp'
 import { monthKey, usagePercent } from '@/lib/messaging/policy'
@@ -15,6 +14,7 @@ import { TEMPLATES, isTemplateName } from '@/lib/messaging/templates'
 import { messageLogQuerySchema } from '@/lib/validation/messaging'
 import { maskPhone } from '@/lib/phone'
 import { addDays, daysBetween, formatIstDate, istDateOnly, istParts, istStartOfMonth } from '@/lib/time'
+import { pageDb } from '@/lib/owner/branch-view'
 
 export const metadata: Metadata = { title: 'WhatsApp and reminders - Rep+' }
 
@@ -38,7 +38,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
   const ctx = await requireStaffPage(['OWNER'])
   const parsed = messageLogQuerySchema.safeParse(await searchParams)
   const query = parsed.success ? parsed.data : { page: 1, purpose: undefined, status: undefined }
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const monthStart = istStartOfMonth()
   const today = istDateOnly()
   const where = { ...(query.purpose ? { purpose: query.purpose } : {}), ...(query.status ? { status: query.status } : {}) }

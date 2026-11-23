@@ -92,9 +92,9 @@ interface GymSpec {
   desk: { name: string; phone: string }[]
   trainers: { name: string; phone: string; commissionPct: number }[]
   branches: { name: string; address: string; lat: number; lng: number; capacity: number }[]
-  demoAthlete: { name: string; phone: string; language: 'EN' | 'HI' | 'PA' }
+  demoAthlete: { name: string; phone: string; language: 'EN' | 'HI' | 'PA'; gender?: 'M' | 'F' }
   // More members with fixed numbers, so they can log in to the member app.
-  extraAthletes?: { name: string; phone: string; language: 'EN' | 'HI' | 'PA' }[]
+  extraAthletes?: { name: string; phone: string; language: 'EN' | 'HI' | 'PA'; gender?: 'M' | 'F' }[]
   // The owner also trains members (gets a roster like a trainer).
   ownerTrains?: boolean
   attendance?: { deskQr: boolean; selfCheckin: boolean; biometric: boolean; manual: boolean }
@@ -125,8 +125,8 @@ const GYMS: GymSpec[] = [
       { name: 'Shivalik City', address: 'Shivalik City, Sector 127, Kharar', lat: 30.7356, lng: 76.655, capacity: 60 },
       { name: 'Zirakpur', address: 'VIP Road, Zirakpur, Punjab 140603', lat: 30.6425, lng: 76.8173, capacity: 80 },
     ],
-    demoAthlete: { name: 'Manmeet Singh', phone: '+919876531001', language: 'EN' },
-    extraAthletes: [{ name: 'Surajdeep', phone: '+919876531002', language: 'PA' }],
+    demoAthlete: { name: 'Manmeet Singh', phone: '+919876531001', language: 'EN', gender: 'M' },
+    extraAthletes: [{ name: 'Surajdeep', phone: '+919876531002', language: 'PA', gender: 'M' }],
     ownerTrains: true,
     attendance: { deskQr: true, selfCheckin: true, biometric: true, manual: true },
     phoneBase: 9817000000,
@@ -531,8 +531,9 @@ async function seedGym(spec: GymSpec) {
 
   for (let i = 0; i < spec.athleteCount; i += 1) {
     const persona = personas[i]
-    const female = chance(0.42)
+    const rolled = chance(0.42)
     const special = [spec.demoAthlete, ...(spec.extraAthletes ?? [])][i]
+    const female = special?.gender ? special.gender === 'F' : rolled
     const isDemo = i === 0
     const name = special ? special.name : `${pick(female ? FIRST_NAMES_F : FIRST_NAMES_M)} ${pick(LAST_NAMES)}`
     const phone = special ? special.phone : `+91${spec.phoneBase + i * 7 + 13}`

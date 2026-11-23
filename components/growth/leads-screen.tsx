@@ -4,11 +4,11 @@ import { FeatureLocked } from '@/components/growth/locked'
 import { CopyLink, LeadActions, LeadForm, ReopenLead } from '@/components/growth/actions'
 import { SOURCE_LABEL, STAGE_LABEL } from '@/lib/growth-labels'
 import { StatusBadge } from '@/components/kit/status-badge'
-import { tenantDb } from '@/lib/db/tenant'
 import { getGymFeatures } from '@/lib/gym/features'
 import { leadFunnel } from '@/lib/owner/leads'
 import { appUrl } from '@/lib/env'
 import { addDays, formatIstDate, istStartOfDay } from '@/lib/time'
+import { pageDb } from '@/lib/owner/branch-view'
 
 // Leads CRM screen shared by the owner (/owner/leads) and the front desk
 // (/desk/leads). Views: today's follow-ups, the stage board, closed leads.
@@ -49,7 +49,7 @@ export async function LeadsScreen({ ctx, view: rawView }: { ctx: StaffPageContex
     )
   }
   const view: View = VIEWS.some((v) => v.key === rawView) ? (rawView as View) : 'today'
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const endOfToday = addDays(istStartOfDay(), 1)
   const open = { stage: { in: ['NEW', 'TRIAL', 'FOLLOW_UP'] as ('NEW' | 'TRIAL' | 'FOLLOW_UP')[] } }
   const [leads, dueCount, openCount, staff, branches, funnel] = await Promise.all([

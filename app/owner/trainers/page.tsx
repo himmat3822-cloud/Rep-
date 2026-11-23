@@ -4,16 +4,16 @@ import { StaffShell } from '@/components/staff/staff-shell'
 import { AssignMembers } from '@/components/trainer/actions'
 import { StatusBadge } from '@/components/kit/status-badge'
 import { requireStaffPage } from '@/lib/auth/page'
-import { tenantDb } from '@/lib/db/tenant'
 import { monthRange, ptStatus, ptSummaries } from '@/lib/trainer/service'
 import { formatInr } from '@/lib/money'
 import { formatIstDate } from '@/lib/time'
+import { pageDb } from '@/lib/owner/branch-view'
 
 export const metadata: Metadata = { title: 'Trainers and PT - Rep+' }
 
 export default async function OwnerTrainersPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const ctx = await requireStaffPage(['OWNER'])
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const offset = Math.max(-12, Math.min(0, Number((await searchParams).m ?? 0) || 0))
   const range = monthRange(new Date(), offset)
   const [trainers, athletes, summaries, disputed] = await Promise.all([

@@ -4,11 +4,11 @@ import { OwnerOverviewView } from '@/components/owner/owner-overview'
 import { requireStaffPage } from '@/lib/auth/page'
 import { getBranchComparison, getOwnerOverview } from '@/lib/owner/overview'
 import { BranchCompare, BranchSwitch } from '@/components/owner/branch-switch'
-import { getGymFeatures } from '@/lib/gym/features'
 import { ownerBottomNav, ownerNav, subscriptionBanner } from '@/lib/nav'
 import { tenantDb } from '@/lib/db/tenant'
 import { formatIstDate, greetingFor } from '@/lib/time'
 import { openQueryCount } from '@/lib/queries/service'
+import { branchNavItem, getBranchView, viewDb } from '@/lib/owner/branch-view'
 
 export const metadata: Metadata = { title: 'Overview - Rep+' }
 
@@ -27,26 +27,25 @@ export default async function OwnerOverviewPage({ searchParams }: { searchParams
   }
 
   const db = tenantDb(gym.id)
-  const [branches, features] = await Promise.all([
-    db.branch.findMany({ where: { archived: false }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], select: { id: true, name: true } }),
-    getGymFeatures(gym.id),
-  ])
+  const [view, scoped] = await Promise.all([getBranchView(gym.id, true), viewDb(gym.id, true)])
   // Branch switch and comparison: Elite (multi_branch) with 2+ branches.
-  const multi = branches.length > 1 && features.includes('multi_branch')
-  const branchId = multi && branches.some((branch) => branch.id === requested) ? requested : null
+  // "One branch at a time": locked to the opened branch, no switch/compare.
+  const { multi, branches } = view
+  const separate = view.mode === 'separate' && Boolean(view.branchId)
+  const branchId = separate ? view.branchId : multi && branches.some((branch) => branch.id === requested) ? requested : null
   const [data, subscription, notice, queries, compare] = await Promise.all([
     getOwnerOverview(gym.id, gym.sessionMinutes, branchId),
     db.gymSubscription.findFirst({ select: { trialEndsAt: true } }),
     db.notification.findFirst({ where: { recipientType: 'STAFF', recipientId: user.id, readAt: null }, orderBy: { createdAt: 'desc' } }),
-    openQueryCount(db, { id: user.id, kind: 'OWNER' }),
+    openQueryCount(scoped, { id: user.id, kind: 'OWNER' }),
     multi && !branchId ? getBranchComparison(gym.id, gym.sessionMinutes) : Promise.resolve(null),
   ])
   const branchName = branchId ? branches.find((branch) => branch.id === branchId)?.name : null
   const banner = subscriptionBanner(gym.subscriptionStatus, subscription?.trialEndsAt) ?? (notice ? { tone: 'trial' as const, text: `${notice.title}: ${notice.body}` } : null)
 
   return (
-    <AppShell {...shell} kicker={branchName ? `Control centre - ${branchName}` : shell.kicker} sections={ownerNav(gym.ownerHandlesDesk, gym.athleteLabelPlural, data.atRisk, queries)} banner={banner}>
-      {multi ? <BranchSwitch base="/owner" branches={branches} active={branchId} /> : null}
+    <AppShell {...shell} profile={separate && view.branchName ? { name: user.name, subtitle: `${gym.name} - ${view.branchName}` } : shell.profile} kicker={branchName ? `Control centre - ${branchName}` : shell.kicker} sections={ownerNav(gym.ownerHandlesDesk, gym.athleteLabelPlural, data.atRisk, queries, branchNavItem(view))} banner={banner}>
+      {multi && !separate ? <BranchSwitch base="/owner" branches={branches} active={branchId} /> : null}
       <OwnerOverviewView
         data={data}
         firstName={user.name.split(' ')[0]}

@@ -151,7 +151,7 @@ export default async function AdminGymDetailPage({ params }: { params: Promise<{
           </section>
 
           <section className="panel">
-            <p className="kicker">KASRAT INVOICES</p>
+            <p className="kicker">REP+ INVOICES</p>
             <h2>Payments</h2>
             <div className="list-rows">
               {sub.invoices.length === 0 ? <p className="muted" style={{ paddingTop: 10 }}>No invoices yet.</p> : null}

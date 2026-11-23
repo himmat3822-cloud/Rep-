@@ -98,7 +98,7 @@ export function CreateGymForm({ plans }: { plans: { id: string; name: string; mo
         </div>
       </div>
 
-      <p className="kicker" style={{ marginTop: 10 }}>KASRAT PLAN</p>
+      <p className="kicker" style={{ marginTop: 10 }}>REP+ PLAN</p>
       <div className="form-grid">
         <div className="field">
           <label htmlFor="planId">Plan</label>

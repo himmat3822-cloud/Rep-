@@ -8,6 +8,8 @@ import type { PushTransport } from '@/lib/athlete/push'
 import { runDueReminders, type DueRunSummary } from './dues'
 import { reportWeekFor, runRenewalReminders, runSlotReminders, runWeeklyReports, runWishes, type JobCount } from './scheduled'
 import { generateMotivationForGym, type LineGenerator, type MotivationSummary } from './motivation'
+import { runAutoRules } from './broadcast'
+import { flushOutbox, type FlushResult } from './outbox'
 
 // /api/cron/messages runs this. Safe to call every hour or once a day:
 // daily jobs claim a JobRun key ("dues:<gymId>:<date>") so they run once,
@@ -17,8 +19,8 @@ import { generateMotivationForGym, type LineGenerator, type MotivationSummary } 
 //   weekly report   - Sunday from 6 PM (or Monday morning on a daily cron)
 //   slot reminders  - every run (needs an hourly cron to be useful)
 
-export type MessageJob = 'dues' | 'renewals' | 'wishes' | 'weekly' | 'slots'
-export const MESSAGE_JOBS: MessageJob[] = ['dues', 'renewals', 'wishes', 'weekly', 'slots']
+export type MessageJob = 'dues' | 'renewals' | 'wishes' | 'weekly' | 'slots' | 'rules'
+export const MESSAGE_JOBS: MessageJob[] = ['dues', 'renewals', 'wishes', 'weekly', 'slots', 'rules']
 
 export interface GymMessageRun {
   gymId: string
@@ -27,6 +29,8 @@ export interface GymMessageRun {
   wishes?: { birthdays: JobCount; anniversaries: JobCount }
   weekly?: JobCount
   slots?: JobCount
+  rules?: { ruleId: string; queued: number }[]
+  outbox?: FlushResult
   error?: string
 }
 
@@ -111,6 +115,12 @@ export async function runMessageJobs(db: PrismaClient, now: Date = new Date(), o
       if (has('slot_booking') && messaging.slotReminders && !quiet) {
         run.slots = await runSlotReminders(db, ctx, info, now)
       }
+      // Owner's automatic messages, then everything waiting in the outbox
+      // (bulk sends, rules, nudges queued overnight).
+      if (dailyTime || force.has('rules')) {
+        run.rules = await once(db, `rules:${gym.id}:${date}`, force.has('rules'), () => runAutoRules(db, { id: gym.id, name: gym.name }, now))
+      }
+      if (!quiet) run.outbox = await flushOutbox(db, gym.id, now, { limit: 2000, ctx })
     } catch (error) {
       console.error('[cron:messages] gym failed', gym.id, error)
       run.error = error instanceof Error ? error.message : 'failed'

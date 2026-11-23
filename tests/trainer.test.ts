@@ -142,7 +142,11 @@ describe('trainer desk (database)', () => {
     expect(sent[0][2]).toBe(nudgeLine('PA', 'missed', 5))
     await expect(sendNudge(base, db, { id: G.gym.id, name: 'Coach Gym' }, A(), mine.id, { kind: 'streak' }, ten, { whatsapp })).rejects.toThrow(/already got a nudge/)
     const night = new Date(Date.parse(`${addDays(today, 1).toISOString().slice(0, 10)}T22:30:00+05:30`))
-    await expect(sendNudge(base, db, { id: G.gym.id, name: 'Coach Gym' }, A(), mine.id, { kind: 'missed' }, night, { whatsapp })).rejects.toThrow(/9 PM/)
+    const queued = await sendNudge(base, db, { id: G.gym.id, name: 'Coach Gym' }, A(), mine.id, { kind: 'missed' }, night, { whatsapp })
+    expect(queued.queued).toBe(true)
+    expect(await db.outboundMessage.count({ where: { athleteId: mine.id, purpose: 'trainer_nudge', status: 'PENDING' } })).toBe(1)
+    await expect(sendNudge(base, db, { id: G.gym.id, name: 'Coach Gym' }, A(), mine.id, { kind: 'missed' }, night, { whatsapp })).rejects.toThrow(/already waiting/)
+    await db.outboundMessage.deleteMany({ where: { athleteId: mine.id } })
     await expect(sendNudge(base, db, { id: G.gym.id, name: 'Coach Gym' }, A(), theirs.id, { kind: 'missed' }, ten, { whatsapp })).rejects.toThrow(/not on your roster/)
   })
 

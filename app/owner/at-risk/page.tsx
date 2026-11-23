@@ -6,11 +6,11 @@ import { FeatureLocked } from '@/components/growth/locked'
 import { RecalculateRisk, RiskOutcome } from '@/components/growth/actions'
 import { StatusBadge } from '@/components/kit/status-badge'
 import { requireStaffPage } from '@/lib/auth/page'
-import { tenantDb } from '@/lib/db/tenant'
 import { getGymFeatures } from '@/lib/gym/features'
 import { atRiskList } from '@/lib/owner/engagement'
 import { riskLevel } from '@/lib/owner/risk'
 import { daysBetween, formatIstDate, istDateOnly } from '@/lib/time'
+import { pageDb } from '@/lib/owner/branch-view'
 
 export const metadata: Metadata = { title: 'At-risk list - Rep+' }
 
@@ -28,7 +28,7 @@ export default async function AtRiskPage() {
       </StaffShell>
     )
   }
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const { weekOf, rows } = await atRiskList(db)
   const today = istDateOnly()
   const open = rows.filter((r) => !r.contacted)

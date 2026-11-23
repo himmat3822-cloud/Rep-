@@ -10,8 +10,12 @@ const deskTools = (base: string): NavItem[] => [
   { label: 'Collect payment', href: `${base}/collect`, icon: 'collect', ready: true },
 ]
 
-export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, atRisk: number, openQueries = 0): NavSection[] {
-  const sections: NavSection[] = [
+// branch: only for owners of a multi-branch gym. Shows which branch the
+// dashboard is on (or "All branches") and links to the branch view page.
+export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, atRisk: number, openQueries = 0, branch?: { label: string } | null): NavSection[] {
+  const sections: NavSection[] = []
+  if (branch) sections.push({ title: 'BRANCH', items: [{ label: branch.label, href: '/owner/branch', icon: 'branch', ready: true }] })
+  sections.push(
     {
       items: [
         { label: 'Overview', href: '/owner', icon: 'overview', ready: true },
@@ -30,12 +34,13 @@ export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, 
       title: 'ENGAGE',
       items: [
         { label: 'Member queries', href: '/owner/queries', icon: 'queries', ready: true, count: openQueries || undefined },
+        { label: 'Send messages', href: '/owner/broadcasts', icon: 'broadcast', ready: true },
         { label: 'Announcements', href: '/owner/announcements', icon: 'announcements', ready: true },
         { label: 'Challenges', href: '/owner/challenges', icon: 'challenges', ready: true },
         { label: 'Complaints', href: '/owner/complaints', icon: 'complaints', ready: true },
       ],
     },
-  ]
+  )
   if (ownerHandlesDesk) sections.push({ title: 'FRONT DESK', items: deskTools('/owner/desk') })
   return sections
 }

@@ -7,11 +7,11 @@ import { DeleteExpense, ExpenseForm, InsightsPanel } from '@/components/growth/a
 import { CATEGORY_LABEL, SOURCE_LABEL } from '@/lib/growth-labels'
 import { BarChart } from '@/components/kit/bar-chart'
 import { requireStaffPage } from '@/lib/auth/page'
-import { tenantDb } from '@/lib/db/tenant'
 import { getGymFeatures } from '@/lib/gym/features'
 import { attendanceReport, duesReport, leadsReport, membersReport, profitReport, ptReport, revenueReport } from '@/lib/owner/reports'
 import { formatInr, formatInrCompact } from '@/lib/money'
 import { formatHour, formatIstDate } from '@/lib/time'
+import { pageDb } from '@/lib/owner/branch-view'
 
 export const metadata: Metadata = { title: 'Reports - Rep+' }
 
@@ -34,7 +34,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const tab: Tab = TABS.some((t) => t.key === sp.tab) ? (sp.tab as Tab) : 'revenue'
   const months = [3, 6, 12].includes(Number(sp.months)) ? Number(sp.months) : 6
   const features = await getGymFeatures(ctx.gym.id)
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const href = (t: Tab, m = months) => `/owner/reports?tab=${t}&months=${m}`
   const csv = (kind: string) => (
     <a className="btn btn-outline btn-sm" href={`/api/gym/reports/${kind}.csv?months=${months}`} download>

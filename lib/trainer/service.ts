@@ -8,6 +8,8 @@ import { firstName, nudgeLine, type NudgeKind } from '@/lib/messaging/templates'
 import { cleanParam } from '@/lib/messaging/templates'
 import { loadMessagingContext, sendGymMessage, type Transport } from '@/lib/messaging/send'
 import type { PushTransport } from '@/lib/athlete/push'
+import { enqueue, nextSendTime } from '@/lib/messaging/outbox'
+import { isQuietHour } from '@/lib/messaging/policy'
 import { daysBetween, formatIstDate, istDateOnly, istParts, IST_OFFSET_MS } from '@/lib/time'
 
 // Trainer side of Rep+.
@@ -100,6 +102,26 @@ export async function sendNudge(base: PrismaClient, db: TenantDb, gym: { id: str
   const idle = athlete.lastVisitAt ? Math.max(1, daysBetween(istDateOnly(athlete.lastVisitAt), istDateOnly(now))) : 7
   const line = input.kind === 'custom' ? cleanParam(input.text ?? '', 160) : nudgeLine(lang, input.kind, input.kind === 'streak' ? athlete.streakDays : idle)
   if (input.kind === 'custom' && line === '-') throw new ApiError(422, 'VALIDATION_ERROR', 'Write a short message')
+  // 9 PM - 8 AM: queue it for 8 AM instead of refusing, so the trainer does
+  // not have to remember to come back in the morning.
+  if (isQuietHour(now)) {
+    const sendsAt = nextSendTime(now)
+    const day = istDateOnly(sendsAt).toISOString().slice(0, 10)
+    const waiting = await db.outboundMessage.count({ where: { athleteId: athlete.id, purpose: 'trainer_nudge', status: { in: ['PENDING', 'SENDING'] } } })
+    if (waiting > 0) throw new ApiError(409, 'CONFLICT', 'A nudge for this member is already waiting for the morning')
+    await enqueue(base, gym.id, [
+      {
+        athleteId: athlete.id,
+        template: 'kasrat_trainer_nudge',
+        language: lang,
+        params: [firstName(athlete.name), firstName(staff.name), line, gym.name],
+        purpose: 'trainer_nudge',
+        dedupeKey: `nudge:${athlete.id}:${day}`,
+        push: { title: gym.name, path: '' },
+      },
+    ], now)
+    return { ok: true, line, queued: true, sendsAt }
+  }
   const ctx = await loadMessagingContext(base, gym.id, transports.whatsapp, transports.push)
   const result = await sendGymMessage(
     base,
@@ -117,7 +139,7 @@ export async function sendNudge(base: PrismaClient, db: TenantDb, gym: { id: str
   )
   switch (result.outcome) {
     case 'sent':
-      return { ok: true, line }
+      return { ok: true, line, queued: false, sendsAt: now }
     case 'duplicate':
       throw new ApiError(409, 'CONFLICT', 'This member already got a nudge today')
     case 'quiet_hours':

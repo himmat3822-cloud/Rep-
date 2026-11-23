@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { MessageCircleQuestion } from 'lucide-react'
 import { QueryReplyBox } from './reply-box'
-import { tenantDb } from '@/lib/db/tenant'
+import { viewDb } from '@/lib/owner/branch-view'
 import { staffQueries, TOPIC_LABEL, type QueryFilter } from '@/lib/queries/service'
 import { formatIstDate } from '@/lib/time'
 
@@ -19,7 +19,7 @@ const STATUS_LABEL = { OPEN: 'Waiting', ANSWERED: 'Replied', CLOSED: 'Done' } as
 
 export async function QueriesScreen({ gymId, viewer, base, filter, memberHref }: { gymId: string; viewer: { id: string; kind: 'OWNER' | 'DESK' | 'TRAINER' }; base: string; filter?: string; memberHref: (id: string) => string }) {
   const active: QueryFilter = FILTERS.some((f) => f.key === filter) ? (filter as QueryFilter) : 'open'
-  const db = tenantDb(gymId)
+  const db = await viewDb(gymId, viewer.kind === 'OWNER')
   const [threads, openCount, branches] = await Promise.all([
     staffQueries(db, viewer, active),
     db.memberQuery.count({ where: { status: 'OPEN', ...(viewer.kind === 'OWNER' ? {} : { trainerId: viewer.id }) } }),

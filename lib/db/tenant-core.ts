@@ -52,6 +52,9 @@ export const TENANT_MODELS: ReadonlySet<string> = new Set([
   'MotivationLine',
   'Complaint',
   'MemberQuery',
+  'OutboundMessage',
+  'Campaign',
+  'AutoRule',
   'QueryMessage',
   'WorkoutSplit',
   'TrainerNote',
@@ -227,3 +230,96 @@ export function scopeToGym(base: PrismaClient, gymId: string) {
 }
 
 export type TenantDb = ReturnType<typeof scopeToGym>
+
+// ---------------------------------------------------------------------------
+// One-branch view (owner "one branch at a time" dashboard).
+// On top of the gym scope, every READ is narrowed to one branch: members
+// whose home branch it is, and everything that belongs to those members or
+// happened at that branch. Writes are not narrowed (they target exact rows
+// the page already showed). Gym-wide things (plans, settings, challenges,
+// templates) are untouched.
+// ---------------------------------------------------------------------------
+
+const READ_OPS = new Set(['findMany', 'findFirst', 'findFirstOrThrow', 'count', 'aggregate', 'groupBy'])
+
+// Rows tied to a branch directly. "orNull": rows with no branch are
+// gym-wide (a lead before a branch was picked) and stay visible.
+const BRANCH_COLUMN: Record<string, 'exact' | 'orNull'> = {
+  CheckIn: 'exact',
+  Expense: 'orNull',
+  PeakHourStat: 'exact',
+  Slot: 'exact',
+  Lead: 'orNull',
+  Complaint: 'orNull',
+  Announcement: 'orNull',
+  MemberQuery: 'orNull',
+}
+
+// Rows tied to a member: visible when the member belongs to the branch.
+const MEMBER_ROWS = new Set([
+  'Membership',
+  'FreezeRequest',
+  'Payment',
+  'Invoice',
+  'Due',
+  'SlotBooking',
+  'MessageLog',
+  'RiskScore',
+  'ChallengeEntry',
+  'AthleteBadge',
+  'MotivationLine',
+  'OutboundMessage',
+  'MemberPaymentClaim',
+  'PtSession',
+  'TrainerNote',
+  'WorkoutSplit',
+  'ProgressLog',
+  'ProgressPhoto',
+  'PersonalRecord',
+])
+
+export function branchFilter(model: string, branchId: string, athleteIds: string[]): AnyRecord | null {
+  if (model === 'Athlete') return { homeBranchId: branchId }
+  // Staff of that branch, staff not tied to a branch, and owners.
+  if (model === 'GymUser') return { OR: [{ branchId }, { branchId: null }, { kind: 'OWNER' }] }
+  const column = BRANCH_COLUMN[model]
+  if (column === 'exact') return { branchId }
+  if (column === 'orNull') return { OR: [{ branchId }, { branchId: null }] }
+  if (MEMBER_ROWS.has(model)) return { athleteId: { in: athleteIds } }
+  return null
+}
+
+export function scopeBranchArgs(model: string, operation: string, args: AnyRecord, branchId: string, athleteIds: string[]): AnyRecord {
+  if (!READ_OPS.has(operation)) return args
+  const filter = branchFilter(model, branchId, athleteIds)
+  if (!filter) return args
+  const where = isRecord(args.where) ? args.where : {}
+  return { ...args, where: { AND: [where, filter] } }
+}
+
+// athleteIds: every member (archived too) whose home branch is branchId,
+// loaded once by the caller (lib/owner/branch-view.ts).
+export function scopeToBranch(base: PrismaClient, gymId: string, branchId: string, athleteIds: string[]) {
+  if (!gymId || !branchId) throw new TenantViolationError('scopeToBranch requires a gymId and a branchId')
+  const extended = base.$extends({
+    name: 'kasrat-tenant-branch',
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          const scoped = scopeArgs(model, operation, args, gymId)
+          return query(scopeBranchArgs(model, operation, scoped, branchId, athleteIds) as typeof args)
+        },
+      },
+    },
+  })
+  return new Proxy(extended, {
+    get(target, prop, receiver) {
+      if (typeof prop === 'string' && BLOCKED_CLIENT_PROPS.has(prop)) {
+        return () => {
+          throw new TenantViolationError(`${prop} is disabled on a tenant client`)
+        }
+      }
+      return Reflect.get(target, prop, receiver)
+    },
+  }) as unknown as TenantDb
+}

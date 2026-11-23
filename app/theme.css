@@ -341,3 +341,15 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 ) { background: var(--lime); border-color: var(--lime); color: #18211e; }
 [data-theme='dark'] .branch-switch a.on svg { color: #18211e; }
 [data-theme='dark'] .week-day.on * { color: #18211e; }
+
+/* Send messages: selected group chip at night (same reason as other chips). */
+[data-theme='dark'] .bc-chips button.on { background: var(--lime); border-color: var(--lime); color: #18211e; }
+[data-theme='dark'] :is(.bc-preset, .bc-channels button).on { border-color: var(--lime); box-shadow: inset 0 0 0 1px var(--lime); }
+
+/* Tip strips (quiet-hours notice, import hints) were pale-on-pale at night. */
+[data-theme='dark'] .tip { background: #d5f36a14; border-color: #d5f36a33; color: var(--text); }
+[data-theme='dark'] .tip svg { color: var(--lime); }
+
+/* Owner branch view (dark) */
+[data-theme='dark'] :is(.bv-style, .bv-card).on { border-color: var(--lime); box-shadow: inset 0 0 0 1px var(--lime); }
+[data-theme='dark'] .bv-style.on .bv-style-icon { background: var(--lime); color: #18211e; }

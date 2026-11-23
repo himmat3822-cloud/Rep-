@@ -7,6 +7,11 @@ import { TENANT_MODELS } from '@/lib/db/tenant-core'
 
 const LAST = ['Athlete', 'GymUser', 'Role', 'Branch', 'GymSubscription', 'GymOverride']
 
+// About 50 deletes in a row. From a laptop in India to the database in
+// Singapore each one takes a round trip, so Prisma's default 5 second
+// transaction limit is far too short (P2028 "expired transaction").
+const PURGE_TX = { maxWait: 20_000, timeout: 180_000 }
+
 function delegateName(model: string): string {
   return model.charAt(0).toLowerCase() + model.slice(1)
 }
@@ -23,5 +28,5 @@ export async function purgeGymData(db: PrismaClient, gymId: string): Promise<voi
     await tx.otpCode.deleteMany({ where: { gymId } })
     await tx.platformPaymentClaim.deleteMany({ where: { gymId } })
     await tx.gym.delete({ where: { id: gymId } })
-  })
+  }, PURGE_TX)
 }

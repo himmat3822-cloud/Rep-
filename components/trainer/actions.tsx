@@ -32,8 +32,14 @@ export function NudgeButton({ athleteId, name, compact }: { athleteId: string; n
   const { run, pending } = useAction()
 
   async function send(kind: string, text?: string) {
-    const ok = await run(() => api(`/api/gym/trainer/athletes/${athleteId}/nudge`, { method: 'POST', body: { kind, text } }), `Nudge sent to ${name.split(' ')[0]}`)
-    if (ok !== null) setOpen(false)
+    const first = name.split(' ')[0]
+    await run(
+      () => api<{ queued: boolean }>(`/api/gym/trainer/athletes/${athleteId}/nudge`, { method: 'POST', body: { kind, text } }),
+      (result) => (result.queued ? `It is quiet hours, so the nudge to ${first} goes out at 8 AM` : `Nudge sent to ${first}`),
+    )
+    // Close either way: the message (sent, queued or why not) shows as a toast.
+    setOpen(false)
+    setCustom('')
   }
 
   return (
@@ -56,7 +62,7 @@ export function NudgeButton({ athleteId, name, compact }: { athleteId: string; n
               {pending ? <Loader2 className="spin" /> : <Send />}
             </button>
           </div>
-          <small className="hint">One nudge per member per day. Never between 9 PM and 8 AM.</small>
+          <small className="hint">One nudge per member per day. Sent between 9 PM and 8 AM, it waits and goes out at 8 AM.</small>
         </div>
       ) : null}
     </div>

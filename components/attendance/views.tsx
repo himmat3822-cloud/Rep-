@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { Settings2 } from 'lucide-react'
 import { StaffShell, type StaffPageContext } from '@/components/staff/staff-shell'
 import { ComingSoon } from '@/components/shell/coming-soon'
-import { tenantDb } from '@/lib/db/tenant'
 import { hasPermission } from '@/lib/auth/permissions'
 import { loadGymConfig } from '@/lib/gym/context'
 import { enabledMethods } from '@/lib/attendance/methods'
@@ -11,6 +10,7 @@ import { addDays, istStartOfDay } from '@/lib/time'
 import { CheckinDesk } from './checkin-desk'
 import { BiometricImport, ManualRegister } from './register-and-import'
 import { InsightsView } from './insights-view'
+import { pageDb } from '@/lib/owner/branch-view'
 
 // One attendance screen for owner (/owner/attendance, /owner/desk/scanner)
 // and front desk (/desk/scanner). Tabs depend on the methods the owner
@@ -19,7 +19,7 @@ import { InsightsView } from './insights-view'
 type Tab = 'desk' | 'register' | 'import' | 'insights'
 
 export async function AttendanceView({ ctx, basePath, tab, title }: { ctx: StaffPageContext; basePath: string; tab?: string; title: string }) {
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const config = await loadGymConfig(db, ctx.gym.id)
   const methods = enabledMethods(config.settings.attendance, config.features)
   const perms = ctx.claims.perms

@@ -7,6 +7,7 @@ import { Pager } from '@/components/kit/pager'
 import { StaffShell, type StaffPageContext } from '@/components/staff/staff-shell'
 import { ComingSoon } from '@/components/shell/coming-soon'
 import { tenantDb } from '@/lib/db/tenant'
+import { getBranchView, pageDb } from '@/lib/owner/branch-view'
 import { hasPermission } from '@/lib/auth/permissions'
 import { getGymFeatures } from '@/lib/gym/features'
 import { getMemberProfile, listMembers, MEMBER_STATUSES } from '@/lib/owner/members'
@@ -48,10 +49,13 @@ export async function MembersListView({ ctx, base, searchParams }: { ctx: StaffP
   }
   const parsed = memberListQuerySchema.safeParse(searchParams)
   const filter = parsed.success ? parsed.data : { page: 1 }
-  const [result, branches] = await Promise.all([
-    listMembers(tenantDb(ctx.gym.id), filter),
+  // One-branch dashboard: the list is that branch only, so no branch chips.
+  const [view, db] = await Promise.all([getBranchView(ctx.gym.id, ctx.user.kind === 'OWNER'), pageDb(ctx)])
+  const [result, allBranches] = await Promise.all([
+    listMembers(db, filter),
     tenantDb(ctx.gym.id).branch.findMany({ where: { archived: false }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], select: { id: true, name: true } }),
   ])
+  const branches = view.mode === 'separate' && view.branchId ? [] : allBranches
   const total = Object.values(result.counts).reduce((sum, value) => sum + (value ?? 0), 0)
   const chip = (status?: string, branchId: string | undefined = filter.branchId) => {
     const query = new URLSearchParams()

@@ -2,9 +2,9 @@ import Link from 'next/link'
 import { StaffShell, type StaffPageContext } from '@/components/staff/staff-shell'
 import { ComplaintActions } from '@/components/growth/actions'
 import { StatusBadge } from '@/components/kit/status-badge'
-import { tenantDb } from '@/lib/db/tenant'
 import { privateImageUrl } from '@/lib/integrations/cloudinary'
 import { formatIstDate } from '@/lib/time'
+import { pageDb } from '@/lib/owner/branch-view'
 
 // Complaints and equipment issues board, shared by owner and desk.
 const KIND_LABEL: Record<string, string> = { FEEDBACK: 'Feedback', EQUIPMENT: 'Equipment', CLEANLINESS: 'Cleanliness', STAFF: 'Staff', OTHER: 'Other' }
@@ -16,7 +16,7 @@ const FILTERS = [
 export async function ComplaintsScreen({ ctx, filter }: { ctx: StaffPageContext; filter?: string }) {
   const base = ctx.user.kind === 'OWNER' ? '/owner' : '/desk'
   const showResolved = filter === 'resolved'
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const [rows, openCount, branches] = await Promise.all([
     db.complaint.findMany({ where: showResolved ? { status: 'RESOLVED' } : { status: { in: ['OPEN', 'IN_PROGRESS'] } }, orderBy: showResolved ? { resolvedAt: 'desc' } : [{ status: 'asc' }, { createdAt: 'asc' }], take: 100 }),
     db.complaint.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS'] } } }),

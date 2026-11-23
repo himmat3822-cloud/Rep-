@@ -111,7 +111,8 @@
     "kasrat_anniversary": "Happy anniversary, {{1}}! Today you complete {{2}} year(s) with {{3}}, with {{4}} workouts so far. Thank you for showing up. Here is to the next year!",
     "kasrat_weekly_report": "Hi {{1}}, your week at {{6}}: trained {{2}} of 7 days, streak {{3}} days, favourite time {{4}}. {{5}} Keep it going!",
     "kasrat_quota_warning": "Hi {{1}}, your gym has used {{2}}% of this month's WhatsApp messages on Rep+ ({{3}} of {{4}}). When the limit is reached only login codes go out. Contact Rep+ support for a top-up or upgrade your plan.",
-    "kasrat_trainer_nudge": "Hi {{1}}, {{2}} from {{4}} here. {{3}} See you at the gym!"
+    "kasrat_trainer_nudge": "Hi {{1}}, {{2}} from {{4}} here. {{3}} See you at the gym!",
+    "kasrat_gym_update": "Hi {{1}}, a message from {{2}}:\n\n{{3}}\n\nReply STOP to stop these messages."
   },
   "waNote": {
     "friendly_soft": "Renew on time and keep the momentum going.",
@@ -468,5 +469,14 @@
     "homeCardBtn": "Ask your trainer",
     "homeUnread": "{count} new replies",
     "complaintHint": "For broken equipment or a complaint, use Feedback in Profile."
+  },
+  "waPreset": {
+    "miss_you": "We have not seen you for {days} days, {name}. Your spot on the floor is waiting, come in today.",
+    "welcome": "Welcome to {gym}! Show your app QR at the desk and ask your trainer for your first plan.",
+    "renew": "Your plan at {gym} has ended. Renew this week and keep your progress going.",
+    "ending": "Your plan ends in {days} days. Renew at the desk or in the app so your training does not stop.",
+    "consistency": "You have been really consistent, {name}. Keep the streak alive this week!",
+    "challenge": "A new challenge is live at {gym}. Open the app, join it and climb the leaderboard.",
+    "dues": "You have a pending balance at {gym}. Please clear it on your next visit or pay in the app."
   }
 }

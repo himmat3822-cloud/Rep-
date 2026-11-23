@@ -3,14 +3,14 @@ import { StaffShell } from '@/components/staff/staff-shell'
 import { AnnouncementForm, EndAnnouncement } from '@/components/growth/actions'
 import { StatusBadge } from '@/components/kit/status-badge'
 import { requireStaffPage } from '@/lib/auth/page'
-import { tenantDb } from '@/lib/db/tenant'
 import { formatIstDate } from '@/lib/time'
+import { pageDb } from '@/lib/owner/branch-view'
 
 export const metadata: Metadata = { title: 'Announcements - Rep+' }
 
 export default async function AnnouncementsPage() {
   const ctx = await requireStaffPage(['OWNER'])
-  const db = tenantDb(ctx.gym.id)
+  const db = await pageDb(ctx)
   const now = new Date()
   const [rows, branches] = await Promise.all([
     db.announcement.findMany({ orderBy: { createdAt: 'desc' }, take: 40 }),

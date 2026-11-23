@@ -6,7 +6,7 @@ import { scopeToGym, type TenantDb } from './tenant-core'
 // The isolation logic and its rules live in ./tenant-core.ts (pure, so the
 // seed script and tests can use it without the server-only client).
 
-export { TENANT_MODELS, PLATFORM_MODELS_WITH_GYM_ID, TenantViolationError, scopeArgs, scopeToGym } from './tenant-core'
+export { TENANT_MODELS, PLATFORM_MODELS_WITH_GYM_ID, TenantViolationError, scopeArgs, scopeToGym, scopeToBranch } from './tenant-core'
 export type { TenantDb } from './tenant-core'
 
 export function tenantDb(gymId: string): TenantDb {

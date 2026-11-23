@@ -159,6 +159,25 @@ enum ComplaintKind {
   OTHER
 }
 
+// Outbox: messages waiting to go out (bulk sends, automatic rules, and
+// nudges made during quiet hours). Sent through the normal message pipeline.
+enum OutboxStatus {
+  PENDING
+  SENDING
+  SENT
+  SKIPPED
+  FAILED
+  CANCELLED
+}
+
+// AUTO: app notification first, WhatsApp if the member has no app
+// notifications. WHATSAPP: WhatsApp only. PUSH: app notification only (free).
+enum SendChannel {
+  AUTO
+  WHATSAPP
+  PUSH
+}
+
 // Member questions to their trainer (diet plan, workout split ...). Kept
 // apart from complaints: these are requests, not problems.
 enum QueryTopic {
@@ -1015,6 +1034,70 @@ model Complaint {
   createdAt    DateTime        @default(now())
 
   @@index([gymId, status])
+}
+
+model OutboundMessage {
+  id         String       @id @default(cuid())
+  gymId      String
+  athleteId  String
+  campaignId String?
+  ruleId     String?
+  template   String
+  language   String
+  params     Json
+  purpose    String
+  dedupeKey  String?
+  channel    SendChannel  @default(AUTO)
+  pushTitle  String?
+  pushPath   String?
+  sendAfter  DateTime     @default(now())
+  status     OutboxStatus @default(PENDING)
+  outcome    String?
+  attempts   Int          @default(0)
+  sentAt     DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([gymId, status, sendAfter])
+  @@index([status, sendAfter])
+  @@index([campaignId, status])
+  @@index([gymId, ruleId, athleteId, createdAt])
+}
+
+// One bulk send made by the owner: who it went to and what it said.
+model Campaign {
+  id           String      @id @default(cuid())
+  gymId        String
+  title        String
+  audience     Json
+  preset       String?
+  customText   String?
+  channel      SendChannel @default(AUTO)
+  total        Int         @default(0)
+  createdById  String
+  scheduledFor DateTime    @default(now())
+  cancelledAt  DateTime?
+  createdAt    DateTime    @default(now())
+
+  @@index([gymId, createdAt])
+}
+
+// Automatic message rule: a member group gets a message once, then not again
+// for cooldownDays. Runs every morning with the other reminders.
+model AutoRule {
+  id           String      @id @default(cuid())
+  gymId        String
+  name         String
+  audience     Json
+  preset       String?
+  customText   String?
+  channel      SendChannel @default(AUTO)
+  cooldownDays Int         @default(14)
+  enabled      Boolean     @default(true)
+  lastRunAt    DateTime?
+  createdById  String
+  createdAt    DateTime    @default(now())
+
+  @@index([gymId, enabled])
 }
 
 model MemberQuery {
