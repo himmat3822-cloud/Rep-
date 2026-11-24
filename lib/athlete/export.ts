@@ -61,7 +61,7 @@ export async function buildDataExport(db: TenantDb, gym: { id: string; name: str
     dues: dues.map((d) => ({ amountRupees: rupees(d.amountPaise), dueDate: d.dueDate, status: d.status, paidAt: d.paidAt })),
     checkIns: checkIns.map((c) => ({ in: c.checkedInAt, out: c.checkedOutAt, method: c.method })),
     slotBookings: bookings.map((b) => ({ slotId: b.slotId, status: b.status, bookedAt: b.createdAt })),
-    workoutSplits: splits.map((s) => ({ days: s.days, dietNotes: s.dietNotes, active: s.active, byTrainer: Boolean(s.createdById) })),
+    workoutSplits: splits.map((s) => ({ days: s.days, dietNotes: s.dietNotes, dietMeals: s.dietMeals, active: s.active, byTrainer: Boolean(s.createdById) })),
     progressLogs: logs.map(({ id: _id, gymId: _gym, athleteId: _a, ...rest }) => rest),
     progressPhotos: photos.map((p) => ({ takenOn: p.takenOn, pose: p.pose, storedPrivately: true })),
     personalRecords: records.map((r) => ({ exercise: r.exercise, weightKg: r.weightKg, reps: r.reps, achievedOn: r.achievedOn })),

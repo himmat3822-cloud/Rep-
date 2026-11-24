@@ -16,11 +16,14 @@ export const PATCH = gymRoute({ permission: 'settings.manage', schema: gymAppSet
     invoicePrefix: input.invoicePrefix,
     memberUpiId: input.memberUpiId || undefined,
     invoiceFooter: input.invoiceFooter || undefined,
+    ownerTrains: input.ownerTrains,
+    ownerTrainingView: input.ownerTrainingView,
+    queryRouting: input.queryRouting,
   }
   await db.gym.update({
     where: { id: gym.id },
     data: { athleteLabel: input.athleteLabel, athleteLabelPlural: input.athleteLabelPlural, defaultLanguage: input.defaultLanguage, ownerHandlesDesk: input.ownerHandlesDesk, sessionMinutes: input.sessionMinutes, settings },
   })
-  await audit({ gymId: gym.id, actorType: 'STAFF', actorId: staff!.sub, impersonatedBy: staff?.imp ?? null, action: 'settings.app', entity: 'Gym', entityId: gym.id, meta: { ownerHandlesDesk: { from: row?.ownerHandlesDesk, to: input.ownerHandlesDesk }, athleteLabel: input.athleteLabel }, ip: meta.ip })
+  await audit({ gymId: gym.id, actorType: 'STAFF', actorId: staff!.sub, impersonatedBy: staff?.imp ?? null, action: 'settings.app', entity: 'Gym', entityId: gym.id, meta: { ownerHandlesDesk: { from: row?.ownerHandlesDesk, to: input.ownerHandlesDesk }, ownerTrains: { from: current.ownerTrains, to: input.ownerTrains }, queryRouting: { from: current.queryRouting, to: input.queryRouting }, athleteLabel: input.athleteLabel }, ip: meta.ip })
   return ok({ ok: true })
 })

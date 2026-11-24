@@ -7,6 +7,7 @@ import { getGymFeatures } from '@/lib/gym/features'
 import { bookableBranchIds, listSlots, myBookings, weekDates } from '@/lib/athlete/slots'
 import type { WorkoutDay } from '@/lib/athlete/home'
 import { istDateOnly } from '@/lib/time'
+import { parseMeals } from '@/lib/trainer/diet'
 
 export const metadata: Metadata = { title: 'Schedule - Rep+' }
 
@@ -35,6 +36,7 @@ export default async function SchedulePage({ params }: { params: Promise<{ slug:
         restDays={athlete.restDays}
         split={((split?.days as { days?: WorkoutDay[] } | null)?.days ?? []) as WorkoutDay[]}
         dietNotes={split?.dietNotes ?? null}
+        dietMeals={parseMeals(split?.dietMeals)}
         trainerName={trainer?.name ?? null}
         slotsEnabled={slotsOn}
         branches={branches}

@@ -2,11 +2,22 @@ import { z } from 'zod'
 import { splitDaySchema } from './athlete'
 import { NUDGE_KINDS } from '@/lib/messaging/templates'
 
+export const dietMealSchema = z.object({
+  name: z.string().trim().min(1, 'Name the meal').max(30),
+  time: z.string().trim().max(20).default(''),
+  items: z.string().trim().min(1, 'Write what to eat').max(400),
+})
+const dietMeals = z
+  .array(dietMealSchema)
+  .max(8, 'Up to 8 meals')
+  .default([])
+
 const uniqueWeekdays = (days: { weekday: number }[]) => new Set(days.map((d) => d.weekday)).size === days.length
 
 export const trainerSplitSchema = z.object({
   days: z.array(splitDaySchema).max(7).refine(uniqueWeekdays, 'Each weekday can appear only once'),
   dietNotes: z.string().trim().max(2000).default(''),
+  dietMeals,
 })
 export type TrainerSplitInput = z.input<typeof trainerSplitSchema>
 export type TrainerSplitOutput = z.output<typeof trainerSplitSchema>
@@ -16,6 +27,7 @@ export const templateSchema = z.object({
   goal: z.string().trim().max(80).default(''),
   days: z.array(splitDaySchema).min(1, 'Add at least one training day').max(7).refine(uniqueWeekdays, 'Each weekday can appear only once'),
   dietNotes: z.string().trim().max(2000).default(''),
+  dietMeals,
 })
 export type TemplateInput = z.input<typeof templateSchema>
 export type TemplateOutput = z.output<typeof templateSchema>

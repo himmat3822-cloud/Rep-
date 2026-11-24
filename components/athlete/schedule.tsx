@@ -8,6 +8,7 @@ import { api, ApiClientError } from '@/lib/api/client'
 import { translator, type Lang } from '@/lib/i18n'
 import type { WorkoutDay } from '@/lib/athlete/home'
 import type { SlotView } from '@/lib/athlete/slots'
+import type { DietMeal } from '@/lib/trainer/diet'
 
 // Schedule tab: week strip, the day's workout from the split, slot booking
 // with live capacity (book / cancel / move), and the split editor.
@@ -34,6 +35,7 @@ export function ScheduleView(props: {
   restDays: number[]
   split: WorkoutDay[]
   dietNotes: string | null
+  dietMeals?: DietMeal[]
   trainerName: string | null
   slotsEnabled: boolean
   branches: { id: string; name: string }[]
@@ -157,7 +159,23 @@ export function ScheduleView(props: {
         ) : props.split.length === 0 ? (
           <p className="muted">{t('sched', 'noSplit')}</p>
         ) : null}
-        {props.dietNotes ? (
+        {props.dietMeals && props.dietMeals.length ? (
+          <details className="diet" open>
+            <summary>{t('sched', 'dietPlan')}</summary>
+            <ol className="diet-meal-view">
+              {props.dietMeals.map((meal, index) => (
+                <li key={index}>
+                  <div>
+                    <strong>{meal.name}</strong>
+                    {meal.time ? <small>{meal.time}</small> : null}
+                  </div>
+                  <p>{meal.items}</p>
+                </li>
+              ))}
+            </ol>
+            {props.dietNotes ? <p>{props.dietNotes}</p> : null}
+          </details>
+        ) : props.dietNotes ? (
           <details className="diet">
             <summary>{t('sched', 'dietNotes')}</summary>
             <p>{props.dietNotes}</p>

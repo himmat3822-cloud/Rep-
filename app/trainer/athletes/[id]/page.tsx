@@ -7,9 +7,10 @@ import { DeleteButton, NoteForm, NudgeButton, PtLogForm, ReleasePlanButton, Staf
 import { Heatmap, WeightChart } from '@/components/athlete/progress'
 import { StatusBadge } from '@/components/kit/status-badge'
 import { requireStaffPage } from '@/lib/auth/page'
+import { parseMeals } from '@/lib/trainer/diet'
 import { tenantDb } from '@/lib/db/tenant'
 import { getGymFeatures } from '@/lib/gym/features'
-import { rosterWhere, ptStatus } from '@/lib/trainer/service'
+import { coachAthlete, ptStatus, rosterWhere } from '@/lib/trainer/service'
 import { attendanceHeatmap, monthSummary } from '@/lib/athlete/progress'
 import { privateImageUrl } from '@/lib/integrations/cloudinary'
 import { daysBetween, formatIstDate, istDateOnly } from '@/lib/time'
@@ -36,11 +37,15 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
   const db = tenantDb(gym.id)
   const staff = { sub: user.id, kind: user.kind, name: user.name }
   // Trainers only see their own roster; no money fields are loaded here.
+  // Own roster, or a member who recently asked this trainer something.
+  const allowed = await coachAthlete(db, staff, id).catch(() => null)
   const athlete = await db.athlete.findFirst({
-    where: { id, ...rosterWhere(staff) },
+    where: { id: allowed?.id ?? '-' },
     select: { id: true, name: true, memberCode: true, status: true, gender: true, dateOfBirth: true, joinedAt: true, lastVisitAt: true, streakDays: true, bestStreak: true, restDays: true, shareProgressWithTrainer: true, sharePhotosWithTrainer: true },
   })
   if (!athlete) notFound()
+  // Members who only asked this trainer: plan and notes, no nudges or PT.
+  const onRoster = user.kind === 'OWNER' || (await db.athlete.count({ where: { id, ...rosterWhere(staff) } })) > 0
   const features = await getGymFeatures(gym.id)
   const today = istDateOnly()
   const membership = await db.membership.findFirst({ where: { athleteId: id, status: { in: ['ACTIVE', 'FROZEN', 'PENDING'] }, endsAt: { gte: today } }, orderBy: { endsAt: 'desc' }, select: { endsAt: true, status: true, planId: true } })
@@ -60,12 +65,12 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
           </div>
           <div className="row-actions">
             <StatusBadge value={athlete.status} />
-            <NudgeButton athleteId={athlete.id} name={athlete.name} />
+            {onRoster ? <NudgeButton athleteId={athlete.id} name={athlete.name} /> : null}
           </div>
         </div>
       </div>
       <div className="tab-links">
-        {TABS.map(([key, label]) => (
+        {TABS.filter(([key]) => onRoster || key !== 'pt').map(([key, label]) => (
           <Link key={key} className={tab === key ? 'active' : ''} href={`/trainer/athletes/${id}${key === 'overview' ? '' : `?tab=${key}`}`}>
             {label}
           </Link>
@@ -74,7 +79,7 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
       {tab === 'overview' ? await Overview() : null}
       {tab === 'plan' ? await Plan() : null}
       {tab === 'notes' ? await Notes() : null}
-      {tab === 'pt' ? await Pt() : null}
+      {tab === 'pt' && onRoster ? await Pt() : null}
       {tab === 'progress' ? await Progress() : null}
     </TrainerShell>
   )
@@ -134,8 +139,9 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
         <StaffSplitEditor
           initialDays={days}
           initialDiet={split?.dietNotes ?? ''}
+          initialMeals={parseMeals(split?.dietMeals)}
           saveUrl={`/api/gym/trainer/athletes/${id}/split`}
-          templates={templates.map((t) => ({ id: t.id, name: t.name, days: ((t.days as { days?: StaffSplitDay[] }).days ?? []) as StaffSplitDay[], dietNotes: t.dietNotes }))}
+          templates={templates.map((t) => ({ id: t.id, name: t.name, days: ((t.days as { days?: StaffSplitDay[] }).days ?? []) as StaffSplitDay[], dietNotes: t.dietNotes, dietMeals: parseMeals(t.dietMeals) }))}
           saveLabel="Save and send to member"
         />
       </section>

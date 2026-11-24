@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { FileText, Plus, Search, Upload } from 'lucide-react'
+import { Dumbbell, FileText, MessageCircleQuestion, Plus, Search, Upload } from 'lucide-react'
 import { initials } from '@/components/brand'
 import { StatusBadge } from '@/components/kit/status-badge'
 import { Pager } from '@/components/kit/pager'
@@ -14,6 +14,8 @@ import { getMemberProfile, listMembers, MEMBER_STATUSES } from '@/lib/owner/memb
 import { memberListQuerySchema } from '@/lib/validation/owner'
 import { formatInr } from '@/lib/money'
 import { addDays, formatIstDate, istDateOnly } from '@/lib/time'
+import { parseMeals, type DietMeal } from '@/lib/trainer/diet'
+import { coachList } from '@/lib/trainer/coaches'
 import { MemberForm, type MemberFormOptions } from './member-form'
 import { MoneyPanel } from './money-panel'
 import { ArchiveButton, MemberSearch } from './member-bits'
@@ -31,10 +33,12 @@ async function featureGate(ctx: StaffPageContext) {
 
 export async function formOptions(ctx: StaffPageContext): Promise<MemberFormOptions> {
   const db = tenantDb(ctx.gym.id)
-  const [branches, trainers] = await Promise.all([
+  // The owner shows up as a trainer only when they said they train members.
+  const [branches, coaches] = await Promise.all([
     db.branch.findMany({ where: { archived: false }, orderBy: { createdAt: 'asc' }, select: { id: true, name: true } }),
-    db.gymUser.findMany({ where: { active: true, kind: 'TRAINER' }, orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+    coachList(db),
   ])
+  const trainers = coaches.map((coach) => ({ id: coach.id, name: coach.kind === 'OWNER' ? `${coach.name} (owner)` : coach.name }))
   return { branches, trainers, label: ctx.gym.athleteLabel }
 }
 
@@ -198,6 +202,7 @@ export async function MemberProfileView({ ctx, base, id, openSell }: { ctx: Staf
   const visitSet = new Set(profile.visitDays)
   const grid = Array.from({ length: 60 }, (_, index) => addDays(today, index - 59).toISOString().slice(0, 10))
   const frozenNow = current?.frozenFrom && current.frozenUntil && current.frozenFrom <= today && current.frozenUntil >= today
+  const training = await trainingPlan(ctx.gym.id, athlete.id)
 
   return (
     <StaffShell ctx={ctx} title={athlete.name} kicker={ctx.gym.athleteLabelPlural}>
@@ -250,6 +255,8 @@ export async function MemberProfileView({ ctx, base, id, openSell }: { ctx: Staf
               ))}
             </div>
           </section>
+
+          {training ? <TrainingPanel plan={training} memberId={athlete.id} canEdit={ctx.user.kind === 'OWNER' || ctx.user.kind === 'TRAINER'} trainerName={trainerName} /> : null}
 
           {canSeeMoney ? (
             <section className="panel">
@@ -374,5 +381,96 @@ export async function MemberProfileView({ ctx, base, id, openSell }: { ctx: Staf
         <Link href={`${base}/members`}>Back to all {ctx.gym.athleteLabelPlural.toLowerCase()}</Link> - <Link href={quickAddHref(base)}>Add another</Link>
       </p>
     </StaffShell>
+  )
+}
+
+// --- Workout and diet the member has right now ----------------------------
+
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+interface TrainingPlan {
+  days: { weekday: number; title: string; focus: string; exercises: number }[]
+  dietNotes: string
+  dietMeals: DietMeal[]
+  setBy: string | null
+  updatedAt: Date | null
+  openAsks: number
+}
+
+// null when the gym's Rep+ plan has no workout and diet plans.
+async function trainingPlan(gymId: string, athleteId: string): Promise<TrainingPlan | null> {
+  const features = await getGymFeatures(gymId)
+  if (!features.includes('workout_diet_plans')) return null
+  const db = tenantDb(gymId)
+  const [split, openAsks] = await Promise.all([
+    db.workoutSplit.findFirst({ where: { athleteId, active: true }, orderBy: { updatedAt: 'desc' } }),
+    db.memberQuery.count({ where: { athleteId, status: 'OPEN', topic: { in: ['DIET', 'WORKOUT'] } } }),
+  ])
+  const author = split?.createdById ? await db.gymUser.findFirst({ where: { id: split.createdById }, select: { name: true } }) : null
+  const raw = ((split?.days as { days?: { weekday: number; title: string; focus?: string; exercises?: unknown[] }[] } | null)?.days ?? []).slice().sort((a, b) => a.weekday - b.weekday)
+  return {
+    days: raw.map((day) => ({ weekday: day.weekday, title: day.title, focus: day.focus ?? '', exercises: Array.isArray(day.exercises) ? day.exercises.length : 0 })),
+    dietNotes: split?.dietNotes ?? '',
+    dietMeals: parseMeals(split?.dietMeals),
+    setBy: split ? (author?.name ?? 'the member') : null,
+    updatedAt: split?.updatedAt ?? null,
+    openAsks,
+  }
+}
+
+function TrainingPanel({ plan, memberId, canEdit, trainerName }: { plan: TrainingPlan; memberId: string; canEdit: boolean; trainerName: string }) {
+  const hasPlan = plan.days.length > 0 || plan.dietNotes || plan.dietMeals.length > 0
+  return (
+    <section className="panel">
+      <div className="panel-heading">
+        <div>
+          <p className="kicker">WORKOUT AND DIET</p>
+          <h2>{hasPlan ? `Set by ${plan.setBy}${plan.updatedAt ? `, ${shortDate(plan.updatedAt)}` : ''}` : 'No workout or diet plan yet'}</h2>
+        </div>
+        {canEdit ? (
+          <Link className="btn btn-outline btn-sm" href={`/trainer/athletes/${memberId}?tab=plan`}>
+            <Dumbbell /> {hasPlan ? 'Change plan' : 'Give a plan'}
+          </Link>
+        ) : null}
+      </div>
+      {plan.openAsks ? (
+        <p className="tip" style={{ marginTop: 10 }}>
+          <MessageCircleQuestion className="inline-icon" /> {plan.openAsks === 1 ? 'Asked for a new workout or diet. ' : `${plan.openAsks} open asks about workout or diet. `}
+          {canEdit ? 'Change the plan, then reply in Member queries.' : `${trainerName} will reply.`}
+        </p>
+      ) : null}
+      {plan.days.length ? (
+        <ul className="member-plan-days">
+          {plan.days.map((day) => (
+            <li key={day.weekday}>
+              <span>{WEEKDAY_SHORT[day.weekday]}</span>
+              <div>
+                <strong>{day.title}</strong>
+                <small>
+                  {day.focus ? `${day.focus} - ` : ''}
+                  {day.exercises} exercises
+                </small>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : hasPlan ? null : (
+        <p className="muted" style={{ marginTop: 8 }}>The member follows their own routine. {canEdit ? 'Give a plan so it shows in their app.' : ''}</p>
+      )}
+      {plan.dietMeals.length ? (
+        <ol className="diet-meal-view">
+          {plan.dietMeals.map((meal, index) => (
+            <li key={index}>
+              <div>
+                <strong>{meal.name}</strong>
+                {meal.time ? <small>{meal.time}</small> : null}
+              </div>
+              <p>{meal.items}</p>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+      {plan.dietNotes ? <p className="member-plan-diet">{plan.dietNotes}</p> : null}
+    </section>
   )
 }

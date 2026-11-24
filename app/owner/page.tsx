@@ -9,6 +9,7 @@ import { tenantDb } from '@/lib/db/tenant'
 import { formatIstDate, greetingFor } from '@/lib/time'
 import { openQueryCount } from '@/lib/queries/service'
 import { branchNavItem, getBranchView, viewDb } from '@/lib/owner/branch-view'
+import { getOwnerTraining, switchToTrainer } from '@/lib/trainer/coaches'
 
 export const metadata: Metadata = { title: 'Overview - Rep+' }
 
@@ -27,7 +28,7 @@ export default async function OwnerOverviewPage({ searchParams }: { searchParams
   }
 
   const db = tenantDb(gym.id)
-  const [view, scoped] = await Promise.all([getBranchView(gym.id, true), viewDb(gym.id, true)])
+  const [view, scoped, training] = await Promise.all([getBranchView(gym.id, true), viewDb(gym.id, true), getOwnerTraining(gym.id)])
   // Branch switch and comparison: Elite (multi_branch) with 2+ branches.
   // "One branch at a time": locked to the opened branch, no switch/compare.
   const { multi, branches } = view
@@ -44,7 +45,7 @@ export default async function OwnerOverviewPage({ searchParams }: { searchParams
   const banner = subscriptionBanner(gym.subscriptionStatus, subscription?.trialEndsAt) ?? (notice ? { tone: 'trial' as const, text: `${notice.title}: ${notice.body}` } : null)
 
   return (
-    <AppShell {...shell} profile={separate && view.branchName ? { name: user.name, subtitle: `${gym.name} - ${view.branchName}` } : shell.profile} kicker={branchName ? `Control centre - ${branchName}` : shell.kicker} sections={ownerNav(gym.ownerHandlesDesk, gym.athleteLabelPlural, data.atRisk, queries, branchNavItem(view))} banner={banner}>
+    <AppShell {...shell} profile={separate && view.branchName ? { name: user.name, subtitle: `${gym.name} - ${view.branchName}` } : shell.profile} kicker={branchName ? `Control centre - ${branchName}` : shell.kicker} sections={ownerNav(gym.ownerHandlesDesk, gym.athleteLabelPlural, data.atRisk, queries, branchNavItem(view), training)} switchTo={switchToTrainer(training)} banner={banner}>
       {multi && !separate ? <BranchSwitch base="/owner" branches={branches} active={branchId} /> : null}
       <OwnerOverviewView
         data={data}

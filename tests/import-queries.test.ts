@@ -176,14 +176,18 @@ describe('member queries (database)', () => {
     expect((await db.memberQuery.findFirstOrThrow({ where: { id: query.id } })).status).toBe('CLOSED')
   })
 
-  it('members without a trainer reach the owner; members only see their own', async () => {
-    await createQuery(db, { id: G.gym.id, slug: G.gym.slug }, loner, { topic: 'PLAN', body: 'Can I switch to quarterly?' })
+  it('members without a trainer reach any trainer and the owner; members only see their own', async () => {
+    const lonerQuery = await createQuery(db, { id: G.gym.id, slug: G.gym.slug }, loner, { topic: 'PLAN', body: 'Can I switch to quarterly?' })
+    expect(lonerQuery.trainerId).toBeNull()
     const ownerView = await staffQueries(db, { id: G.owner.id, kind: 'OWNER' }, 'open')
     expect(ownerView.map((q) => q.athlete.id)).toContain(loner.id)
+    // "Any trainer" queries reach every trainer.
+    const otherView = await staffQueries(db, { id: other.id, kind: 'TRAINER' }, 'all')
+    expect(otherView.map((q) => q.id)).toEqual([lonerQuery.id])
     const trainerView = await staffQueries(db, { id: trainer.id, kind: 'TRAINER' }, 'all')
-    expect(trainerView.every((q) => q.athlete.id === G.athlete.id)).toBe(true)
+    const mine = trainerView.find((q) => q.athlete.id === G.athlete.id)!
     expect((await memberQueries(db, loner.id)).every((q) => q.athlete.id === loner.id)).toBe(true)
-    await expect(addMemberMessage(db, { id: G.gym.id }, { id: loner.id, name: loner.name }, trainerView[0].id, 'sneaky')).rejects.toThrow(/not found/)
+    await expect(addMemberMessage(db, { id: G.gym.id }, { id: loner.id, name: loner.name }, mine.id, 'sneaky')).rejects.toThrow(/not found/)
   })
 })
 

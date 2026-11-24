@@ -1144,6 +1144,8 @@ model WorkoutSplit {
   createdById String?
   days        Json
   dietNotes   String   @default("")
+  // [{ name: "Meal 1", time: "8 AM", items: "..." }]
+  dietMeals   Json     @default("[]")
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -1370,6 +1372,7 @@ model WorkoutTemplate {
   goal        String   @default("")
   days        Json
   dietNotes   String   @default("")
+  dietMeals   Json     @default("[]")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { TrainerShell } from '@/components/trainer/trainer-shell'
 import { ApplyTemplate, DeleteButton, type StaffSplitDay } from '@/components/trainer/actions'
-import { EditTemplate, NewTemplate } from '@/components/trainer/templates'
+import { AddReadyPlan, EditTemplate, NewTemplate } from '@/components/trainer/templates'
+import { READY_PLANS } from '@/lib/trainer/ready-plans'
+import { parseMeals, type DietMeal } from '@/lib/trainer/diet'
 import { requireStaffPage } from '@/lib/auth/page'
 import { tenantDb } from '@/lib/db/tenant'
 import { getGymFeatures } from '@/lib/gym/features'
@@ -29,8 +31,20 @@ export default async function WorkoutPlansPage() {
     db.gymUser.findMany({ select: { id: true, name: true } }),
   ])
   const author = new Map(staff.map((s) => [s.id, s.name]))
+  const added = new Set(templates.map((t) => t.name.trim().toLowerCase()))
+  const ready = READY_PLANS.filter((plan) => !added.has(plan.name.toLowerCase()))
   return (
     <TrainerShell gym={gym} user={user} title="Workout plans">
+      <section className="panel plan-guide">
+        <p className="kicker">HOW TO GIVE A MEMBER A PLAN</p>
+        <ol>
+          <li>Open the member (My members, or the member&apos;s query) and go to the <strong>Plan</strong> tab.</li>
+          <li>Pick a plan in <strong>Start from a plan</strong>: one of your gym&apos;s plans or a Rep+ ready plan.</li>
+          <li>Change days, exercises and diet notes for that member (veg or non-veg, injuries, timings).</li>
+          <li>Tap <strong>Save and send to member</strong>. It shows in their app under Schedule, and they get a notification.</li>
+          <li>Reply to their query in one line, for example: &quot;Done, check Schedule. We review in 2 weeks.&quot;</li>
+        </ol>
+      </section>
       <div className="row-between" style={{ marginBottom: 14 }}>
         <p className="muted" style={{ margin: 0 }}>Save a split once, give it to many members. Every trainer at {gym.name} can use these plans.</p>
         <NewTemplate />
@@ -57,16 +71,70 @@ export default async function WorkoutPlansPage() {
                   </li>
                 ))}
               </ul>
-              {t.dietNotes ? <p className="diet-preview">{t.dietNotes}</p> : null}
+              <DietPreview meals={parseMeals(t.dietMeals)} notes={t.dietNotes} />
               <div className="row-actions">
                 <ApplyTemplate templateId={t.id} athletes={roster.map((r) => ({ id: r.id, name: r.name, hasPlan: r.hasPlan }))} />
-                {mine ? <EditTemplate id={t.id} name={t.name} goal={t.goal} days={days} dietNotes={t.dietNotes} /> : null}
+                {mine ? <EditTemplate id={t.id} name={t.name} goal={t.goal} days={days} dietNotes={t.dietNotes} dietMeals={parseMeals(t.dietMeals)} /> : null}
               </div>
             </section>
           )
         })}
-        {templates.length === 0 ? <div className="table-empty">No saved plans yet. Make one with New plan.</div> : null}
+        {templates.length === 0 ? <div className="table-empty">No saved plans yet. Make one with New plan, or add a ready plan below.</div> : null}
       </div>
+      {ready.length ? (
+        <>
+          <div className="row-between" style={{ margin: '22px 0 10px' }}>
+            <div>
+              <p className="kicker">REP+ READY PLANS</p>
+              <p className="muted" style={{ margin: 0 }}>Tested starting points with simple Indian diet notes. Add one to your gym&apos;s plans, then edit it or give it to many members.</p>
+            </div>
+          </div>
+          <div className="template-grid">
+            {ready.map((plan) => (
+              <section key={plan.key} className="panel template-card">
+                <div>
+                  <h3>{plan.name}</h3>
+                  <small className="muted">
+                    {plan.level} - {plan.days.length} days a week - {plan.goal}
+                  </small>
+                  <p className="muted" style={{ margin: '6px 0 0' }}>{plan.forWho}</p>
+                </div>
+                <ul className="template-days">
+                  {plan.days.map((day) => (
+                    <li key={day.weekday}>
+                      <span>{WEEKDAY[day.weekday]}</span>
+                      <strong>{day.title}</strong>
+                      <small>{day.exercises.length} exercises</small>
+                    </li>
+                  ))}
+                </ul>
+                <DietPreview meals={plan.dietMeals} notes={plan.dietNotes} />
+                <div className="row-actions">
+                  <AddReadyPlan planKey={plan.key} />
+                </div>
+              </section>
+            ))}
+          </div>
+        </>
+      ) : null}
     </TrainerShell>
+  )
+}
+
+function DietPreview({ meals, notes }: { meals: DietMeal[]; notes: string }) {
+  if (!meals.length && !notes) return null
+  return (
+    <div className="diet-preview">
+      {meals.map((meal, index) => (
+        <p key={index}>
+          <strong>
+            {meal.name}
+            {meal.time ? ` (${meal.time})` : ''}:
+          </strong>{' '}
+          {meal.items}
+        </p>
+      ))}
+      {notes ? <p>{notes}</p> : null}
+    </div>
   )
 }

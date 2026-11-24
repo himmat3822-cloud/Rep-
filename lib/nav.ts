@@ -12,7 +12,9 @@ const deskTools = (base: string): NavItem[] => [
 
 // branch: only for owners of a multi-branch gym. Shows which branch the
 // dashboard is on (or "All branches") and links to the branch view page.
-export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, atRisk: number, openQueries = 0, branch?: { label: string } | null): NavSection[] {
+// training: the owner also trains. 'together' adds the trainer pages to this
+// menu; 'separate' keeps them in their own dashboard (switch button).
+export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, atRisk: number, openQueries = 0, branch?: { label: string } | null, training: 'together' | 'separate' | null = null): NavSection[] {
   const sections: NavSection[] = []
   if (branch) sections.push({ title: 'BRANCH', items: [{ label: branch.label, href: '/owner/branch', icon: 'branch', ready: true }] })
   sections.push(
@@ -34,6 +36,7 @@ export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, 
       title: 'ENGAGE',
       items: [
         { label: 'Member queries', href: '/owner/queries', icon: 'queries', ready: true, count: openQueries || undefined },
+        ...(training ? [] : [{ label: 'Workout plans', href: '/trainer/workouts', icon: 'workouts' as const, ready: true }]),
         { label: 'Send messages', href: '/owner/broadcasts', icon: 'broadcast', ready: true },
         { label: 'Announcements', href: '/owner/announcements', icon: 'announcements', ready: true },
         { label: 'Challenges', href: '/owner/challenges', icon: 'challenges', ready: true },
@@ -41,6 +44,17 @@ export function ownerNav(ownerHandlesDesk: boolean, athleteLabelPlural: string, 
       ],
     },
   )
+  if (training === 'together') {
+    sections.push({
+      title: 'MY TRAINING',
+      items: [
+        { label: 'Training today', href: '/trainer', icon: 'training', ready: true },
+        { label: `My ${athleteLabelPlural.toLowerCase()}`, href: '/trainer/athletes', icon: 'members', ready: true },
+        { label: 'Workout plans', href: '/trainer/workouts', icon: 'workouts', ready: true },
+        { label: 'PT sessions', href: '/trainer/sessions', icon: 'sessions', ready: true },
+      ],
+    })
+  }
   if (ownerHandlesDesk) sections.push({ title: 'FRONT DESK', items: deskTools('/owner/desk') })
   return sections
 }
@@ -64,9 +78,13 @@ export function deskNav(athleteLabelPlural = 'Athletes'): NavSection[] {
   ]
 }
 
-export function trainerNav(athleteLabelPlural: string, openQueries = 0): NavSection[] {
+// isOwner: an owner who trains sees the trainer pages too, with a way back.
+export function trainerNav(athleteLabelPlural: string, openQueries = 0, isOwner = false): NavSection[] {
+  const sections: NavSection[] = isOwner ? [{ items: [{ label: 'Owner dashboard', href: '/owner', icon: 'overview', ready: true }] }] : []
   return [
+    ...sections,
     {
+      title: isOwner ? 'TRAINING' : undefined,
       items: [
         { label: 'Today', href: '/trainer', icon: 'overview', ready: true },
         { label: `My ${athleteLabelPlural.toLowerCase()}`, href: '/trainer/athletes', icon: 'members', ready: true },

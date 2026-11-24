@@ -10,6 +10,8 @@ import { loadMessagingContext, sendGymMessage, type Transport } from '@/lib/mess
 import type { PushTransport } from '@/lib/athlete/push'
 import { enqueue, nextSendTime } from '@/lib/messaging/outbox'
 import { isQuietHour } from '@/lib/messaging/policy'
+import { parseMeals, type DietMeal } from '@/lib/trainer/diet'
+import { trainingSettings } from '@/lib/trainer/coaches'
 import { daysBetween, formatIstDate, istDateOnly, istParts, IST_OFFSET_MS } from '@/lib/time'
 
 // Trainer side of Rep+.
@@ -30,6 +32,27 @@ export async function rosterAthlete(db: TenantDb, staff: Staff, athleteId: strin
   return athlete
 }
 
+// A member who asked this trainer (or any trainer) something in the last
+// 60 days can be coached by them too: open the member, update the plan,
+// leave a note. Money is never part of it. With "all trainers see
+// queries", any recent query counts.
+const ASKED_WINDOW_DAYS = 60
+
+export async function coachAthlete(db: TenantDb, staff: Staff, athleteId: string) {
+  const own = await db.athlete.findFirst({ where: { id: athleteId, ...rosterWhere(staff) } })
+  if (own) return own
+  const since = new Date(Date.now() - ASKED_WINDOW_DAYS * 86400000)
+  const all = (await trainingSettings(db)).queryRouting === 'all'
+  const asked = await db.memberQuery.findFirst({
+    where: { athleteId, createdAt: { gte: since }, ...(all ? {} : { OR: [{ trainerId: staff.sub }, { trainerId: null }] }) },
+    select: { id: true },
+  })
+  if (!asked) throw new ApiError(404, 'NOT_FOUND', 'This member is not on your roster')
+  const athlete = await db.athlete.findFirst({ where: { id: athleteId, archived: false } })
+  if (!athlete) throw new ApiError(404, 'NOT_FOUND', 'This member is not on your roster')
+  return athlete
+}
+
 // ---------------------------------------------------------------------------
 // Weekly split + diet notes
 // ---------------------------------------------------------------------------
@@ -42,12 +65,12 @@ export type SplitDay = {
   exercises: { name: string; sets: number; reps: string }[]
 }
 
-export async function assignSplit(db: TenantDb, gym: { id: string; slug: string }, staff: Staff, athleteId: string, input: { days: SplitDay[]; dietNotes: string }, notify = true) {
-  const athlete = await rosterAthlete(db, staff, athleteId)
+export async function assignSplit(db: TenantDb, gym: { id: string; slug: string }, staff: Staff, athleteId: string, input: { days: SplitDay[]; dietNotes: string; dietMeals?: DietMeal[] }, notify = true) {
+  const athlete = await coachAthlete(db, staff, athleteId)
   const days = { days: [...input.days].sort((a, b) => ((a.weekday + 6) % 7) - ((b.weekday + 6) % 7)) }
   const split = await db.$transaction(async (tx) => {
     await tx.workoutSplit.updateMany({ where: { athleteId: athlete.id, active: true }, data: { active: false } })
-    return tx.workoutSplit.create({ data: { gymId: gym.id, athleteId: athlete.id, createdById: staff.sub, days, dietNotes: input.dietNotes.trim(), active: true } })
+    return tx.workoutSplit.create({ data: { gymId: gym.id, athleteId: athlete.id, createdById: staff.sub, days, dietNotes: input.dietNotes.trim(), dietMeals: (input.dietMeals ?? []).filter((meal) => meal.items.trim()).slice(0, 8).map((meal) => ({ name: meal.name, time: meal.time, items: meal.items })), active: true } })
   })
   if (notify) {
     const lang = athlete.language as Lang
@@ -58,7 +81,7 @@ export async function assignSplit(db: TenantDb, gym: { id: string; slug: string 
 
 // Hand the plan back to the member (they can build their own again).
 export async function releaseSplit(db: TenantDb, staff: Staff, athleteId: string) {
-  const athlete = await rosterAthlete(db, staff, athleteId)
+  const athlete = await coachAthlete(db, staff, athleteId)
   const result = await db.workoutSplit.updateMany({ where: { athleteId: athlete.id, active: true, createdById: { not: null } }, data: { active: false } })
   return { released: result.count }
 }
@@ -69,7 +92,7 @@ export async function applyTemplate(db: TenantDb, gym: { id: string; slug: strin
   const roster = await db.athlete.findMany({ where: { id: { in: athleteIds }, ...rosterWhere(staff) }, select: { id: true } })
   if (roster.length !== new Set(athleteIds).size) throw new ApiError(403, 'FORBIDDEN', 'Some of these members are not on your roster')
   const days = ((template.days as { days?: SplitDay[] } | null)?.days ?? []) as SplitDay[]
-  for (const athlete of roster) await assignSplit(db, gym, staff, athlete.id, { days, dietNotes: template.dietNotes })
+  for (const athlete of roster) await assignSplit(db, gym, staff, athlete.id, { days, dietNotes: template.dietNotes, dietMeals: parseMeals(template.dietMeals) })
   return { applied: roster.length }
 }
 
@@ -78,7 +101,7 @@ export async function applyTemplate(db: TenantDb, gym: { id: string; slug: strin
 // ---------------------------------------------------------------------------
 
 export async function addNote(db: TenantDb, gym: { id: string; slug: string }, staff: Staff, athleteId: string, body: string) {
-  const athlete = await rosterAthlete(db, staff, athleteId)
+  const athlete = await coachAthlete(db, staff, athleteId)
   const note = await db.trainerNote.create({ data: { gymId: gym.id, athleteId: athlete.id, trainerId: staff.sub, body: body.trim() } })
   const lang = athlete.language as Lang
   await notifyAthlete(db, gym, athlete.id, { title: translate(lang, 'coach', 'notifNoteTitle', { name: firstName(staff.name) }), body: body.trim().slice(0, 140), path: '', tag: 'trainer-note' })

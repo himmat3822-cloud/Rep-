@@ -5,6 +5,7 @@ import { AppSettingsForm } from '@/components/owner/settings-forms'
 import { requireStaffPage } from '@/lib/auth/page'
 import { tenantDb } from '@/lib/db/tenant'
 import { parseGymSettings } from '@/lib/gym/settings'
+import { trainingSettings } from '@/lib/trainer/coaches'
 import { getGymFeatures } from '@/lib/gym/features'
 import { invoicePrefixFor } from '@/lib/gst'
 
@@ -14,6 +15,7 @@ export default async function AppSettingsPage() {
   const ctx = await requireStaffPage(['OWNER'])
   const [gym, features] = await Promise.all([tenantDb(ctx.gym.id).gym.findFirstOrThrow(), getGymFeatures(ctx.gym.id)])
   const settings = parseGymSettings(gym.settings)
+  const training = await trainingSettings(tenantDb(ctx.gym.id))
   return (
     <StaffShell ctx={ctx} title="Settings">
       <SettingsTabs active="/owner/settings/app" />
@@ -25,6 +27,9 @@ export default async function AppSettingsPage() {
             athleteLabelPlural: gym.athleteLabelPlural,
             defaultLanguage: gym.defaultLanguage,
             ownerHandlesDesk: gym.ownerHandlesDesk,
+            ownerTrains: training.ownerTrains,
+            ownerTrainingView: settings.ownerTrainingView,
+            queryRouting: settings.queryRouting,
             sessionMinutes: gym.sessionMinutes,
             regularVisitsPerWeek: settings.thresholds.regularVisitsPerWeek,
             slippingAfterDays: settings.thresholds.slippingAfterDays,

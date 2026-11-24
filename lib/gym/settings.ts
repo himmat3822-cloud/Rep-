@@ -52,6 +52,12 @@ export const gymSettingsSchema = z.object({
   // branch switch on the overview); 'separate' asks which branch to open and
   // then shows only that branch on every page.
   ownerView: z.enum(['combined', 'separate']).default('combined'),
+  // Owner who also trains: listed as a trainer to members, and whether the
+  // trainer pages sit inside the owner menu or behind a switch button.
+  ownerTrains: z.boolean().default(false),
+  ownerTrainingView: z.enum(['together', 'separate']).default('together'),
+  // Member queries: only the trainer the member picked, or every trainer.
+  queryRouting: z.enum(['chosen', 'all']).default('chosen'),
   renewEarlyDiscountPct: z.number().int().min(0).max(50).default(0),
   referralRewardDays: z.number().int().min(0).max(60).default(7),
   invoicePrefix: z.string().regex(/^[A-Z]{1,4}$/).optional(),

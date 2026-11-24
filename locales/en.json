@@ -211,7 +211,8 @@
     "reminderNote": "You get a reminder 1 hour before. Slots before 9 AM are reminded the evening before.",
     "branch": "Branch",
     "todayTag": "Today",
-    "dietNotes": "Diet notes from your trainer"
+    "dietNotes": "Diet notes from your trainer",
+    "dietPlan": "Your diet plan"
   },
   "prog": {
     "title": "Progress",
@@ -468,7 +469,14 @@
     "homeCard": "Need a diet plan or a new split?",
     "homeCardBtn": "Ask your trainer",
     "homeUnread": "{count} new replies",
-    "complaintHint": "For broken equipment or a complaint, use Feedback in Profile."
+    "complaintHint": "For broken equipment or a complaint, use Feedback in Profile.",
+    "pickTrainer": "Who do you want to ask?",
+    "anyTrainer": "Any trainer",
+    "yours": "your trainer",
+    "owner": "owner",
+    "sentTo": "Sent to {name}",
+    "sentToAny": "Sent to any trainer",
+    "allSee": "All trainers can see it"
   },
   "waPreset": {
     "miss_you": "We have not seen you for {days} days, {name}. Your spot on the floor is waiting, come in today.",

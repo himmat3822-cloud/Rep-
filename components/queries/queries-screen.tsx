@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import { MessageCircleQuestion } from 'lucide-react'
+import { Dumbbell, MessageCircleQuestion } from 'lucide-react'
 import { QueryReplyBox } from './reply-box'
 import { viewDb } from '@/lib/owner/branch-view'
-import { staffQueries, TOPIC_LABEL, type QueryFilter } from '@/lib/queries/service'
+import { openQueryCount, staffQueries, TOPIC_LABEL, type QueryFilter } from '@/lib/queries/service'
 import { formatIstDate } from '@/lib/time'
 
 // Member queries board, shared by the owner (all queries) and trainers
@@ -22,7 +22,7 @@ export async function QueriesScreen({ gymId, viewer, base, filter, memberHref }:
   const db = await viewDb(gymId, viewer.kind === 'OWNER')
   const [threads, openCount, branches] = await Promise.all([
     staffQueries(db, viewer, active),
-    db.memberQuery.count({ where: { status: 'OPEN', ...(viewer.kind === 'OWNER' ? {} : { trainerId: viewer.id }) } }),
+    openQueryCount(db, viewer),
     db.branch.findMany({ select: { id: true, name: true } }),
   ])
   void branches
@@ -54,7 +54,7 @@ export async function QueriesScreen({ gymId, viewer, base, filter, memberHref }:
                     {thread.athlete.name}
                   </Link>
                   <small className="sub">
-                    {viewer.kind === 'OWNER' ? `${thread.trainer ? `Trainer: ${thread.trainer.name}` : 'No trainer - for you'} - ` : ''}
+                    {thread.trainer ? (thread.trainer.id === viewer.id ? 'Sent to you' : `Sent to ${thread.trainer.name}`) : 'Sent to any trainer'} - 
                     {when(thread.lastMessageAt)}
                   </small>
                 </div>
@@ -70,8 +70,13 @@ export async function QueriesScreen({ gymId, viewer, base, filter, memberHref }:
                 ))}
               </ol>
               <div className="q-tools">
+                {(thread.topic === 'DIET' || thread.topic === 'WORKOUT') && viewer.kind !== 'DESK' ? (
+                  <Link href={`/trainer/athletes/${thread.athlete.id}?tab=plan`} className="button-link outline small-button">
+                    <Dumbbell /> {thread.topic === 'DIET' ? 'Update diet plan' : 'Update workout split'}
+                  </Link>
+                ) : null}
                 <Link href={memberHref(thread.athlete.id)} className="button-link outline small-button">
-                  <MessageCircleQuestion /> {thread.topic === 'DIET' || thread.topic === 'WORKOUT' ? 'Open member to update the plan' : 'Open member'}
+                  <MessageCircleQuestion /> Open member
                 </Link>
               </div>
               <QueryReplyBox id={thread.id} closed={thread.status === 'CLOSED'} />

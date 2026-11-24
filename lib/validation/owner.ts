@@ -100,6 +100,14 @@ export const gymAppSettingsSchema = z.object({
   athleteLabelPlural: z.string().trim().min(2).max(24).regex(/^[A-Za-z ]+$/, 'Letters only'),
   defaultLanguage: languageSchema,
   ownerHandlesDesk: z.boolean(),
+  // The owner also trains members (shows in the member's trainer list).
+  ownerTrains: z.boolean().default(false),
+  // together: training pages inside the owner menu; separate: two
+  // dashboards with a one-tap switch.
+  ownerTrainingView: z.enum(['together', 'separate']).default('together'),
+  // chosen: a member query goes to the trainer the member picked;
+  // all: every trainer sees it (and who it was sent to).
+  queryRouting: z.enum(['chosen', 'all']).default('chosen'),
   sessionMinutes: z.coerce.number().int().min(30).max(240),
   regularVisitsPerWeek: z.coerce.number().int().min(1).max(7),
   slippingAfterDays: z.coerce.number().int().min(2).max(30),

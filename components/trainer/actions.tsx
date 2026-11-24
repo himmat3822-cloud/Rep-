@@ -9,6 +9,8 @@ import { toast } from 'sonner'
 import { api, ApiClientError } from '@/lib/api/client'
 import { useAction } from '@/components/admin/use-action'
 import { ptLogSchema, type PtLogInput, type PtLogOutput } from '@/lib/validation/trainer'
+import { READY_PLANS } from '@/lib/trainer/ready-plans'
+import { blankMeals, MAX_MEALS, MEAL_TIME_HINTS, type DietMeal } from '@/lib/trainer/diet'
 
 // Client pieces of the trainer desk. Labels are English like the rest of
 // the staff dashboards; what the member receives is in their language.
@@ -194,6 +196,7 @@ const WEEK = [
 export function StaffSplitEditor({
   initialDays,
   initialDiet,
+  initialMeals = [],
   saveUrl,
   method = 'PUT',
   extra,
@@ -203,16 +206,18 @@ export function StaffSplitEditor({
 }: {
   initialDays: StaffSplitDay[]
   initialDiet: string
+  initialMeals?: DietMeal[]
   saveUrl: string
   method?: 'PUT' | 'POST'
   extra?: { name: string; goal: string } | null
-  templates?: { id: string; name: string; days: StaffSplitDay[]; dietNotes: string }[]
+  templates?: { id: string; name: string; days: StaffSplitDay[]; dietNotes: string; dietMeals?: DietMeal[] }[]
   onSaved?: () => void
   saveLabel?: string
 }) {
   const router = useRouter()
   const [days, setDays] = useState<StaffSplitDay[]>(initialDays)
   const [diet, setDiet] = useState(initialDiet)
+  const [meals, setMeals] = useState<DietMeal[]>(initialMeals)
   const [meta, setMeta] = useState(extra ?? null)
   const [saving, setSaving] = useState(false)
   const byDay = useMemo(() => new Map(days.map((d) => [d.weekday, d])), [days])
@@ -224,10 +229,13 @@ export function StaffSplitEditor({
     setDays((list) => list.map((d) => (d.weekday === weekday ? { ...d, ...patch } : d)))
   }
   function loadTemplate(id: string) {
-    const template = templates?.find((t) => t.id === id)
+    const ready = id.startsWith('ready:') ? READY_PLANS.find((plan) => `ready:${plan.key}` === id) : null
+    const template = ready ? { name: ready.name, days: ready.days, dietNotes: ready.dietNotes, dietMeals: ready.dietMeals } : templates?.find((t) => t.id === id)
     if (!template) return
+    if (ready && meta && !meta.name.trim()) setMeta({ ...meta, name: ready.name, goal: ready.goal })
     setDays(template.days.map((d) => ({ ...d, exercises: d.exercises.map((e) => ({ ...e })) })))
     setDiet(template.dietNotes)
+    setMeals((template.dietMeals ?? []).map((meal) => ({ ...meal })))
     toast.message(`Loaded "${template.name}". Adjust it, then save.`)
   }
 
@@ -235,7 +243,8 @@ export function StaffSplitEditor({
     setSaving(true)
     try {
       const clean = days.map((d) => ({ ...d, title: d.title.trim() || 'Workout', exercises: d.exercises.filter((e) => e.name.trim()) }))
-      await api(saveUrl, { method, body: { ...(meta ?? {}), days: clean, dietNotes: diet } })
+      const dietMeals = meals.map((meal, index) => ({ name: meal.name.trim() || `Meal ${index + 1}`, time: meal.time.trim(), items: meal.items.trim() })).filter((meal) => meal.items)
+      await api(saveUrl, { method, body: { ...(meta ?? {}), days: clean, dietNotes: diet, dietMeals } })
       toast.success('Saved')
       onSaved?.()
       router.refresh()
@@ -260,19 +269,28 @@ export function StaffSplitEditor({
           </div>
         </div>
       ) : null}
-      {templates && templates.length ? (
-        <div className="field" style={{ maxWidth: 360 }}>
-          <label>Start from a saved plan</label>
-          <select defaultValue="" onChange={(e) => loadTemplate(e.target.value)}>
-            <option value="">Pick a plan...</option>
-            {templates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
+      <div className="field" style={{ maxWidth: 420 }}>
+        <label>Start from a plan (then change what you need)</label>
+        <select value="" onChange={(e) => loadTemplate(e.target.value)}>
+          <option value="">Pick a plan...</option>
+          {templates && templates.length ? (
+            <optgroup label="Your gym's plans">
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
+          <optgroup label="Rep+ ready plans">
+            {READY_PLANS.map((plan) => (
+              <option key={plan.key} value={`ready:${plan.key}`}>
+                {plan.name} - {plan.level}
               </option>
             ))}
-          </select>
-        </div>
-      ) : null}
+          </optgroup>
+        </select>
+      </div>
       <div className="split-week">
         {WEEK.map(([wd, label]) => {
           const day = byDay.get(wd)
@@ -311,9 +329,10 @@ export function StaffSplitEditor({
           )
         })}
       </div>
+      <DietMealsEditor meals={meals} onChange={setMeals} />
       <div className="field">
-        <label>Diet notes (the member sees these under their workout)</label>
-        <textarea rows={4} maxLength={2000} value={diet} placeholder="Protein with every meal (dal, paneer, eggs, curd). 3 litres of water. Light dinner before 9 PM." onChange={(e) => setDiet(e.target.value)} />
+        <label>Other diet notes (water, cheat meal, supplements the member already takes)</label>
+        <textarea rows={3} maxLength={2000} value={diet} placeholder="3 litres of water. Sweets only on Sunday. Light dinner before 9 PM." onChange={(e) => setDiet(e.target.value)} />
       </div>
       <button type="button" className="btn btn-dark" disabled={saving} onClick={save}>
         {saving ? <Loader2 className="spin" /> : <Save />} {saveLabel}
@@ -420,6 +439,53 @@ export function AssignMembers({ trainers, athletes }: { trainers: { id: string; 
           </label>
         ))}
       </div>
+    </div>
+  )
+}
+
+// --- Diet plan by meals ------------------------------------------------------
+function DietMealsEditor({ meals, onChange }: { meals: DietMeal[]; onChange: (meals: DietMeal[]) => void }) {
+  const set = (index: number, patch: Partial<DietMeal>) => onChange(meals.map((meal, i) => (i === index ? { ...meal, ...patch } : meal)))
+  return (
+    <div className="diet-meals">
+      <div className="diet-meals-head">
+        <strong>Diet plan by meals</strong>
+        <small className="muted">The member sees each meal with its time in the app.</small>
+      </div>
+      {meals.length === 0 ? (
+        <div className="diet-meals-start">
+          {[3, 4, 5, 6].map((count) => (
+            <button key={count} type="button" className="btn btn-outline btn-sm" onClick={() => onChange(blankMeals(count))}>
+              <Plus /> {count} meals
+            </button>
+          ))}
+        </div>
+      ) : (
+        <ol className="diet-meal-list">
+          {meals.map((meal, index) => (
+            <li key={index} className="diet-meal">
+              <div className="diet-meal-top">
+                <input aria-label="Meal name" value={meal.name} maxLength={30} placeholder={`Meal ${index + 1}`} onChange={(e) => set(index, { name: e.target.value })} />
+                <input aria-label="Time" list="meal-times" value={meal.time} maxLength={20} placeholder="Time, e.g. 8 AM" onChange={(e) => set(index, { time: e.target.value })} />
+                <button type="button" className="icon-btn" aria-label={`Remove ${meal.name || `meal ${index + 1}`}`} onClick={() => onChange(meals.filter((_, i) => i !== index))}>
+                  <X />
+                </button>
+              </div>
+              <textarea aria-label={`What to eat in ${meal.name || `meal ${index + 1}`}`} rows={2} maxLength={400} value={meal.items} placeholder="2 besan chilla, 1 bowl curd, green tea" onChange={(e) => set(index, { items: e.target.value })} />
+            </li>
+          ))}
+        </ol>
+      )}
+      <datalist id="meal-times">
+        {MEAL_TIME_HINTS.map((time) => (
+          <option key={time} value={time} />
+        ))}
+      </datalist>
+      {meals.length > 0 && meals.length < MAX_MEALS ? (
+        <button type="button" className="link-like" onClick={() => onChange([...meals, { name: `Meal ${meals.length + 1}`, time: '', items: '' }])}>
+          <Plus /> Add meal
+        </button>
+      ) : null}
     </div>
   )
 }

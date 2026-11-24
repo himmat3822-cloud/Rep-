@@ -13,7 +13,7 @@ async function own(db: Parameters<Parameters<typeof gymRoute>[1]>[0]['db'], staf
 
 export const PUT = gymRoute({ allow: ['staff'], permission: 'workouts.manage', feature: 'workout_diet_plans', schema: templateSchema }, async ({ db, staff, params, input }) => {
   await own(db, staff!, params.id)
-  await db.workoutTemplate.update({ where: { id: params.id }, data: { name: input.name, goal: input.goal, days: { days: input.days }, dietNotes: input.dietNotes } })
+  await db.workoutTemplate.update({ where: { id: params.id }, data: { name: input.name, goal: input.goal, days: { days: input.days }, dietNotes: input.dietNotes, dietMeals: input.dietMeals } })
   return ok({ ok: true })
 })
 

@@ -7,6 +7,8 @@ export const QUERY_TOPICS = ['DIET', 'WORKOUT', 'PLAN', 'PT', 'OTHER'] as const
 export const queryCreateSchema = z.object({
   topic: z.enum(QUERY_TOPICS),
   body: z.string().trim().min(3, 'Write a few words').max(1000, 'Keep it under 1000 characters'),
+  // Picked trainer; null = any trainer; missing = my own trainer.
+  trainerId: z.string().min(10).max(40).nullable().optional(),
 })
 export type QueryCreateInput = z.input<typeof queryCreateSchema>
 

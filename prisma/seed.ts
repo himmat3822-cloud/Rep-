@@ -417,6 +417,10 @@ async function seedGym(spec: GymSpec) {
         renewEarlyDiscountPct: 5,
         referralRewardDays: 7,
         invoicePrefix: spec.invoicePrefix,
+        ownerTrains: Boolean(spec.ownerTrains),
+        ownerTrainingView: 'together',
+        // Sharp Fitness: members ask whichever trainer is free.
+        queryRouting: spec.ownerTrains ? 'all' : 'chosen',
         memberUpiId: `${spec.slug.replace(/-/g, '')}@okhdfcbank`,
         // Forge: phones + QR (desk scan and self check-in). Iron Temple: biometric machine + register.
         attendance: spec.attendance
@@ -744,7 +748,7 @@ async function seedGym(spec: GymSpec) {
   })
   const splitRows: Prisma.WorkoutSplitCreateManyInput[] = athleteIds
     .filter((a, index) => a.trainerId || index === 0)
-    .map((a) => ({ gymId: gym.id, athleteId: a.id, createdById: a.trainerId, days: split(['Chest, Shoulders', 'Back, Arms']), dietNotes: 'High protein: dal, paneer, eggs or soya at every meal. 3 litres water. Limit fried snacks.' }))
+    .map((a) => ({ gymId: gym.id, athleteId: a.id, createdById: a.trainerId, days: split(['Chest, Shoulders', 'Back, Arms']), dietNotes: '3 litres water. Limit fried snacks.', dietMeals: [{ name: 'Meal 1', time: '8 AM', items: 'Besan chilla or 3 eggs, 1 bowl curd' }, { name: 'Meal 2', time: '1:30 PM', items: '2 rotis, dal, sabzi, salad' }, { name: 'Meal 3', time: '5 PM', items: 'Sprouts or roasted chana, 1 fruit' }, { name: 'Meal 4', time: '8:30 PM', items: 'Paneer, soya or chicken with sabzi, 1 roti' }] }))
   await db.workoutSplit.createMany({ data: splitRows })
 
   // Weekly challenge
@@ -1072,7 +1076,7 @@ async function seedTrainerDesk(gymId: string) {
     { name: 'Fat loss circuit (4 days)', goal: 'Fat loss, keep strength', days: [day(1, 'Upper circuit', 'Push + pull', [['DB press', 3, '12'], ['Cable row', 3, '12'], ['Shoulder press', 3, '12']]), day(2, 'Lower circuit', 'Legs + core', [['Goblet squat', 3, '15'], ['Step-ups', 3, '12'], ['Hanging knee raise', 3, '12']]), day(4, 'Full body', 'Strength', [['Deadlift', 3, '6'], ['Bench press', 3, '8'], ['Pull-ups', 3, 'max']]), day(5, 'Cardio + core', 'Conditioning', [['Rowing', 1, '15 min'], ['Plank', 3, '45s'], ['Battle ropes', 5, '30s']])], diet: 'Small calorie deficit, never crash diets. Fill half the plate with sabzi and salad. Walk 8,000 steps a day.' },
   ]
   for (const [i, plan] of plans.entries()) {
-    await db.workoutTemplate.create({ data: { gymId, createdById: trainers[i % trainers.length].id, name: plan.name, goal: plan.goal, days: { days: plan.days }, dietNotes: plan.diet } })
+    await db.workoutTemplate.create({ data: { gymId, createdById: trainers[i % trainers.length].id, name: plan.name, goal: plan.goal, days: { days: plan.days }, dietNotes: plan.diet, dietMeals: [] } })
   }
 
   const notes = ['Great depth on squats today. Next week we add 5 kg.', 'Keep your elbows tucked on bench, it will save your shoulders.', 'Sleep 7+ hours this week, your recovery will thank you.', 'Proud of the consistency this month. Keep it going!']

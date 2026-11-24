@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createContext, useContext, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
-import { AlertTriangle, LogOut, Menu, Search, Sparkles, X } from 'lucide-react'
+import { AlertTriangle, LogOut, Menu, Search, Sparkles, X, ArrowLeftRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { Brand, initials } from '@/components/brand'
 import { NAV_ICONS, type NavIconKey } from './nav-icons'
@@ -42,6 +42,8 @@ export interface AppShellProps {
   bottom?: NavItem[]
   profile: { name: string; subtitle: string }
   logout: 'staff' | 'admin'
+  // Owner who also trains, with separate dashboards: one tap to the other.
+  switchTo?: { label: string; short: string; href: string } | null
   banner?: { tone: 'warning' | 'trial'; text: string } | null
   impersonation?: { adminName: string; mode: 'read' | 'write' } | null
   children: ReactNode
@@ -130,7 +132,7 @@ export function ShellFrame({ initial, children }: { initial: FrameProps; childre
   const current = reported?.path === pathname
   const title = current ? props.title : (navTitle(pathname, props) ?? props.title)
   const kicker = current ? props.kicker : initial.kicker
-  const { workspace, sections, bottom = [], profile, logout } = props
+  const { workspace, sections, bottom = [], profile, logout, switchTo = null } = props
 
   async function signOut() {
     setLeaving(true)
@@ -155,6 +157,11 @@ export function ShellFrame({ initial, children }: { initial: FrameProps; childre
         <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
           <Brand />
           <div className="workspace-label">{workspace}</div>
+          {switchTo ? (
+            <Link className="switch-side" href={switchTo.href} onClick={close}>
+              <ArrowLeftRight /> Switch to {switchTo.label}
+            </Link>
+          ) : null}
           {sections.map((section, index) => (
             <div key={section.title ?? index}>
               {section.title ? <div className="nav-section">{section.title}</div> : null}
@@ -192,6 +199,13 @@ export function ShellFrame({ initial, children }: { initial: FrameProps; childre
               <h2 key={title}>{title}</h2>
             </div>
             <div className="top-actions">
+              {switchTo ? (
+                <Link className="switch-pill" href={switchTo.href} aria-label={`Switch to ${switchTo.label}`} title={`Switch to ${switchTo.label}`}>
+                  <ArrowLeftRight />
+                  <span className="switch-long">{switchTo.label}</span>
+                  <span className="switch-short">{switchTo.short}</span>
+                </Link>
+              ) : null}
               <Link className="icon-button" href={searchHref(pathname)} aria-label="Find a person" title="Find a person">
                 <Search />
               </Link>

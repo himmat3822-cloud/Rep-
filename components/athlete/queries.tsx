@@ -15,16 +15,28 @@ type Topic = (typeof TOPICS)[number]
 export interface MemberThread {
   id: string
   topic: Topic
+  sentTo: string | null
   status: 'OPEN' | 'ANSWERED' | 'CLOSED'
   unread: boolean
   when: string
   messages: { id: string; mine: boolean; who: string; body: string; when: string }[]
 }
 
-export function MemberQueries({ slug, lang, trainer, threads }: { slug: string; lang: Lang; trainer: string | null; threads: MemberThread[] }) {
+export interface CoachChoice {
+  id: string
+  name: string
+  mine: boolean
+  owner: boolean
+}
+
+// ANY = "any trainer who is free".
+const ANY = 'any'
+
+export function MemberQueries({ slug, lang, coaches, allSee, threads }: { slug: string; lang: Lang; coaches: CoachChoice[]; allSee: boolean; threads: MemberThread[] }) {
   const t = translator(lang)
   const router = useRouter()
   const [topic, setTopic] = useState<Topic>('DIET')
+  const [to, setTo] = useState<string>(coaches.find((coach) => coach.mine)?.id ?? ANY)
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -32,7 +44,7 @@ export function MemberQueries({ slug, lang, trainer, threads }: { slug: string; 
     if (body.trim().length < 3) return
     setBusy(true)
     try {
-      await api(`/api/g/${slug}/me/queries`, { method: 'POST', body: { topic, body }, session: 'athlete' })
+      await api(`/api/g/${slug}/me/queries`, { method: 'POST', body: { topic, body, trainerId: to === ANY ? null : to }, session: 'athlete' })
       setBody('')
       toast.success(t('qry', 'sent'))
       router.refresh()
@@ -51,9 +63,23 @@ export function MemberQueries({ slug, lang, trainer, threads }: { slug: string; 
       </div>
 
       <section className="a-card q-compose">
-        <span className="q-to">
-          <MessageCircleQuestion /> {trainer ? t('qry', 'to', { name: trainer }) : t('qry', 'toOwner')}
-        </span>
+        <p className="q-label">{t('qry', 'pickTrainer')}</p>
+        <div className="q-topics q-coaches" role="radiogroup" aria-label={t('qry', 'pickTrainer')}>
+          {coaches.map((coach) => (
+            <button key={coach.id} type="button" role="radio" aria-checked={to === coach.id} className={to === coach.id ? 'on' : ''} onClick={() => setTo(coach.id)}>
+              {coach.name}
+              {coach.mine ? <small> ({t('qry', 'yours')})</small> : coach.owner ? <small> ({t('qry', 'owner')})</small> : null}
+            </button>
+          ))}
+          <button type="button" role="radio" aria-checked={to === ANY} className={to === ANY ? 'on' : ''} onClick={() => setTo(ANY)}>
+            {t('qry', 'anyTrainer')}
+          </button>
+        </div>
+        {allSee ? (
+          <span className="q-to">
+            <MessageCircleQuestion /> {t('qry', 'allSee')}
+          </span>
+        ) : null}
         <p className="q-label">{t('qry', 'topic')}</p>
         <div className="q-topics" role="radiogroup" aria-label={t('qry', 'topic')}>
           {TOPICS.map((key) => (
@@ -98,7 +124,10 @@ function Thread({ slug, lang, thread }: { slug: string; lang: Lang; thread: Memb
   return (
     <section className={`a-card q-thread ${thread.unread ? 'unread' : ''}`}>
       <div className="q-thread-head">
-        <strong>{t('qry', thread.topic)}</strong>
+        <span>
+          <strong>{t('qry', thread.topic)}</strong>
+          <small className="q-sent">{thread.sentTo ? t('qry', 'sentTo', { name: thread.sentTo }) : t('qry', 'sentToAny')}</small>
+        </span>
         <span className={`q-status ${thread.status.toLowerCase()}`}>{thread.unread ? t('qry', 'newReply') : t('qry', thread.status)}</span>
       </div>
       <ol className="q-messages">

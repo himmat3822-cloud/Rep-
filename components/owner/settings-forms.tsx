@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { z } from 'zod'
 import { Loader2, Pencil, Plus, Save, Upload } from 'lucide-react'
@@ -131,6 +131,8 @@ export function AppSettingsForm({ defaults, showMemberFeatures }: { defaults: Ap
           </label>
         </div>
       </section>
+
+      <TrainingSettings form={form} />
 
       <section className="panel">
         <p className="kicker">ATTENDANCE</p>
@@ -587,6 +589,39 @@ export function StaffEditor({ staff, branches, limitText, canAdd, deskEnabled }:
             </div>
           ),
         )}
+      </div>
+    </section>
+  )
+}
+
+// You as a trainer + where member queries go.
+function TrainingSettings({ form }: { form: UseFormReturn<AppInput, unknown, AppOutput> }) {
+  const trains = form.watch('ownerTrains')
+  return (
+    <section className="panel">
+      <p className="kicker">YOU AND YOUR TRAINERS</p>
+      <h2>Training</h2>
+      <div className="stack" style={{ marginTop: 12, gap: 10 }}>
+        <label className="check-row">
+          <input type="checkbox" {...form.register('ownerTrains')} /> I also train members (members can pick me as their trainer and send me queries)
+        </label>
+        {trains ? (
+          <div className="field">
+            <label>My owner and trainer dashboards</label>
+            <select {...form.register('ownerTrainingView')}>
+              <option value="together">Together: training pages inside my owner menu</option>
+              <option value="separate">Separate: two dashboards, switch with one tap</option>
+            </select>
+          </div>
+        ) : null}
+        <div className="field">
+          <label>When a member asks a trainer something</label>
+          <select {...form.register('queryRouting')}>
+            <option value="chosen">Only the trainer the member picked sees it</option>
+            <option value="all">All trainers see it (shows who it was sent to)</option>
+          </select>
+          <small className="muted">You always see every query.</small>
+        </div>
       </div>
     </section>
   )
