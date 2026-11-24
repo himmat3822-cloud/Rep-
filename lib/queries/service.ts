@@ -25,7 +25,7 @@ export interface QueryThread {
   id: string
   topic: QueryTopic
   status: 'OPEN' | 'ANSWERED' | 'CLOSED'
-  athlete: { id: string; name: string; phone: string }
+  athlete: { id: string; name: string; phone: string; trainerId: string | null }
   trainer: { id: string; name: string } | null
   createdAt: Date
   lastMessageAt: Date
@@ -124,7 +124,7 @@ async function hydrate(db: TenantDb, rows: { id: string; topic: QueryTopic; stat
   const ids = rows.map((row) => row.id)
   const [messages, athletes] = await Promise.all([
     db.queryMessage.findMany({ where: { queryId: { in: ids } }, orderBy: { createdAt: 'asc' } }),
-    db.athlete.findMany({ where: { id: { in: [...new Set(rows.map((row) => row.athleteId))] } }, select: { id: true, name: true, phone: true } }),
+    db.athlete.findMany({ where: { id: { in: [...new Set(rows.map((row) => row.athleteId))] } }, select: { id: true, name: true, phone: true, trainerId: true } }),
   ])
   const staffIds = [...new Set([...rows.map((row) => row.trainerId), ...messages.map((m) => m.staffId)].filter((id): id is string => Boolean(id)))]
   const staff = staffIds.length ? await db.gymUser.findMany({ where: { id: { in: staffIds } }, select: { id: true, name: true } }) : []
@@ -137,7 +137,7 @@ async function hydrate(db: TenantDb, rows: { id: string; topic: QueryTopic; stat
       id: row.id,
       topic: row.topic,
       status: row.status,
-      athlete: athleteById.get(row.athleteId) ?? { id: row.athleteId, name: 'Member', phone: '' },
+      athlete: athleteById.get(row.athleteId) ?? { id: row.athleteId, name: 'Member', phone: '', trainerId: null },
       trainer: row.trainerId ? { id: row.trainerId, name: staffName.get(row.trainerId) ?? 'Trainer' } : null,
       createdAt: row.createdAt,
       lastMessageAt: row.lastMessageAt,

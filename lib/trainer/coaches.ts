@@ -16,7 +16,7 @@ export interface Coach {
 export async function trainingSettings(db: TenantDb) {
   const gym = await db.gym.findFirst({ select: { settings: true } })
   const settings = parseGymSettings(gym?.settings)
-  return { ownerTrains: await ownerTrains(db, gym?.settings, settings.ownerTrains), ownerTrainingView: settings.ownerTrainingView, queryRouting: settings.queryRouting }
+  return { ownerTrains: await ownerTrains(db, gym?.settings, settings.ownerTrains), ownerTrainingView: settings.ownerTrainingView, queryRouting: settings.queryRouting, planEditors: settings.planEditors }
 }
 
 // Gyms from before this setting: an owner who already has members assigned

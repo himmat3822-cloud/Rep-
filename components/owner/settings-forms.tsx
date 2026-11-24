@@ -622,6 +622,13 @@ function TrainingSettings({ form }: { form: UseFormReturn<AppInput, unknown, App
           </select>
           <small className="muted">You always see every query.</small>
         </div>
+        <div className="field">
+          <label>Who can change a member&apos;s workout split and diet</label>
+          <select {...form.register('planEditors')}>
+            <option value="assigned">Only the member&apos;s own trainer (and me)</option>
+            <option value="any">Any trainer (the member sees who updated it)</option>
+          </select>
+        </div>
       </div>
     </section>
   )

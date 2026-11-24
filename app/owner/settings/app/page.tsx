@@ -30,6 +30,7 @@ export default async function AppSettingsPage() {
             ownerTrains: training.ownerTrains,
             ownerTrainingView: settings.ownerTrainingView,
             queryRouting: settings.queryRouting,
+            planEditors: settings.planEditors,
             sessionMinutes: gym.sessionMinutes,
             regularVisitsPerWeek: settings.thresholds.regularVisitsPerWeek,
             slippingAfterDays: settings.thresholds.slippingAfterDays,

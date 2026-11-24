@@ -425,7 +425,7 @@ function TrainingPanel({ plan, memberId, canEdit, trainerName }: { plan: Trainin
       <div className="panel-heading">
         <div>
           <p className="kicker">WORKOUT AND DIET</p>
-          <h2>{hasPlan ? `Set by ${plan.setBy}${plan.updatedAt ? `, ${shortDate(plan.updatedAt)}` : ''}` : 'No workout or diet plan yet'}</h2>
+          <h2>{hasPlan ? `Updated by ${plan.setBy}${plan.updatedAt ? `, ${shortDate(plan.updatedAt)}` : ''}` : 'No workout or diet plan yet'}</h2>
         </div>
         {canEdit ? (
           <Link className="btn btn-outline btn-sm" href={`/trainer/athletes/${memberId}?tab=plan`}>

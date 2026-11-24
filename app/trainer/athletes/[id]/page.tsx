@@ -36,16 +36,18 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
   const { user, gym } = await requireStaffPage(['TRAINER', 'OWNER'])
   const db = tenantDb(gym.id)
   const staff = { sub: user.id, kind: user.kind, name: user.name }
-  // Trainers only see their own roster; no money fields are loaded here.
-  // Own roster, or a member who recently asked this trainer something.
+  // Own roster (owners: everyone), or any member when the owner lets any
+  // trainer change plans. No money fields are loaded here.
   const allowed = await coachAthlete(db, staff, id).catch(() => null)
   const athlete = await db.athlete.findFirst({
     where: { id: allowed?.id ?? '-' },
-    select: { id: true, name: true, memberCode: true, status: true, gender: true, dateOfBirth: true, joinedAt: true, lastVisitAt: true, streakDays: true, bestStreak: true, restDays: true, shareProgressWithTrainer: true, sharePhotosWithTrainer: true },
+    select: { id: true, name: true, memberCode: true, status: true, trainerId: true, gender: true, dateOfBirth: true, joinedAt: true, lastVisitAt: true, streakDays: true, bestStreak: true, restDays: true, shareProgressWithTrainer: true, sharePhotosWithTrainer: true },
   })
   if (!athlete) notFound()
-  // Members who only asked this trainer: plan and notes, no nudges or PT.
+  // Another trainer's member: plan and notes only (no nudges, PT or
+  // progress, which stay between the member and their own trainer).
   const onRoster = user.kind === 'OWNER' || (await db.athlete.count({ where: { id, ...rosterWhere(staff) } })) > 0
+  const ownTrainer = !onRoster && athlete.trainerId ? await db.gymUser.findFirst({ where: { id: athlete.trainerId }, select: { name: true } }) : null
   const features = await getGymFeatures(gym.id)
   const today = istDateOnly()
   const membership = await db.membership.findFirst({ where: { athleteId: id, status: { in: ['ACTIVE', 'FROZEN', 'PENDING'] }, endsAt: { gte: today } }, orderBy: { endsAt: 'desc' }, select: { endsAt: true, status: true, planId: true } })
@@ -62,6 +64,7 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
             <p className="muted" style={{ margin: '4px 0 0' }}>
               {plan ? `${plan.name}, ends ${day(membership!.endsAt)}${membership!.status === 'FROZEN' ? ' (frozen)' : ''}` : 'No running plan'} - <Flame className="inline-icon" /> {athlete.streakDays}-day streak
             </p>
+            {!onRoster ? <p className="muted" style={{ margin: '4px 0 0' }}>{ownTrainer ? `${ownTrainer.name}'s member` : 'No trainer assigned'} - you can update the workout split, diet and notes</p> : null}
           </div>
           <div className="row-actions">
             <StatusBadge value={athlete.status} />
@@ -70,7 +73,7 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
         </div>
       </div>
       <div className="tab-links">
-        {TABS.filter(([key]) => onRoster || key !== 'pt').map(([key, label]) => (
+        {TABS.filter(([key]) => onRoster || key === 'overview' || key === 'plan' || key === 'notes').map(([key, label]) => (
           <Link key={key} className={tab === key ? 'active' : ''} href={`/trainer/athletes/${id}${key === 'overview' ? '' : `?tab=${key}`}`}>
             {label}
           </Link>
@@ -80,7 +83,7 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
       {tab === 'plan' ? await Plan() : null}
       {tab === 'notes' ? await Notes() : null}
       {tab === 'pt' && onRoster ? await Pt() : null}
-      {tab === 'progress' ? await Progress() : null}
+      {tab === 'progress' && onRoster ? await Progress() : null}
     </TrainerShell>
   )
 
@@ -120,18 +123,22 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
 
   async function Plan() {
     if (!features.includes('workout_diet_plans')) return <div className="table-empty">Workout and diet plans are not in this gym&apos;s Rep+ plan.</div>
-    const [split, templates] = await Promise.all([
+    const [split, templates, history] = await Promise.all([
       db.workoutSplit.findFirst({ where: { athleteId: id, active: true }, orderBy: { updatedAt: 'desc' } }),
       db.workoutTemplate.findMany({ orderBy: { updatedAt: 'desc' }, take: 50 }),
+      db.workoutSplit.findMany({ where: { athleteId: id }, orderBy: { createdAt: 'desc' }, take: 6, select: { id: true, createdById: true, createdAt: true, active: true } }),
     ])
-    const author = split?.createdById ? await db.gymUser.findFirst({ where: { id: split.createdById }, select: { name: true } }) : null
+    const people = await db.gymUser.findMany({ where: { id: { in: history.map((h) => h.createdById).filter((v): v is string => Boolean(v)) } }, select: { id: true, name: true } })
+    const nameOf = new Map(people.map((person) => [person.id, person.name]))
+    const author = split?.createdById ? { name: nameOf.get(split.createdById) ?? 'a trainer' } : null
     const days = ((split?.days as { days?: StaffSplitDay[] } | null)?.days ?? []) as StaffSplitDay[]
     return (
       <section className="panel">
         <div className="row-between">
           <div>
             <p className="kicker">WEEKLY SPLIT</p>
-            <h2>{split ? (author ? `Set by ${author.name}` : 'Made by the member') : 'No plan yet'}</h2>
+            <h2>{split ? (author ? `Updated by ${author.name}${split.createdById === user.id ? ' (you)' : ''}` : 'Made by the member') : 'No plan yet'}</h2>
+            {split ? <p className="muted" style={{ margin: '2px 0 0' }}>Last change {stamp(split.createdAt)}</p> : null}
             <p className="muted">Saving replaces the member&apos;s current plan and tells them in the app. Rest days: {athlete!.restDays.length ? athlete!.restDays.map((d) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') : 'none set'}.</p>
           </div>
           {split?.createdById ? <ReleasePlanButton athleteId={id} /> : null}
@@ -144,6 +151,19 @@ export default async function TrainerAthletePage({ params, searchParams }: { par
           templates={templates.map((t) => ({ id: t.id, name: t.name, days: ((t.days as { days?: StaffSplitDay[] }).days ?? []) as StaffSplitDay[], dietNotes: t.dietNotes, dietMeals: parseMeals(t.dietMeals) }))}
           saveLabel="Save and send to member"
         />
+        {history.length > 1 ? (
+          <div className="plan-history">
+            <p className="kicker">CHANGES</p>
+            <ul>
+              {history.map((h) => (
+                <li key={h.id}>
+                  <strong>{h.createdById ? (nameOf.get(h.createdById) ?? 'Trainer') : 'Member'}</strong> <span className="muted">{stamp(h.createdAt)}</span>
+                  {h.active ? <span className="tag">current</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
     )
   }

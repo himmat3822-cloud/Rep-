@@ -421,6 +421,7 @@ async function seedGym(spec: GymSpec) {
         ownerTrainingView: 'together',
         // Sharp Fitness: members ask whichever trainer is free.
         queryRouting: spec.ownerTrains ? 'all' : 'chosen',
+        planEditors: spec.ownerTrains ? 'any' : 'assigned',
         memberUpiId: `${spec.slug.replace(/-/g, '')}@okhdfcbank`,
         // Forge: phones + QR (desk scan and self check-in). Iron Temple: biometric machine + register.
         attendance: spec.attendance

@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/kit/status-badge'
 import { requireStaffPage } from '@/lib/auth/page'
 import { tenantDb } from '@/lib/db/tenant'
 import { loadRoster } from '@/lib/trainer/roster'
+import { trainingSettings } from '@/lib/trainer/coaches'
 import { formatHour } from '@/lib/time'
 
 export const metadata: Metadata = { title: 'My members - Rep+' }
@@ -18,10 +19,17 @@ const FILTERS = [
   ['pt', 'PT to confirm'],
 ] as const
 
-export default async function RosterPage({ searchParams }: { searchParams: Promise<{ f?: string; q?: string }> }) {
+export default async function RosterPage({ searchParams }: { searchParams: Promise<{ f?: string; q?: string; who?: string }> }) {
   const { user, gym } = await requireStaffPage(['TRAINER', 'OWNER'])
-  const { f = 'all', q = '' } = await searchParams
-  const roster = await loadRoster(tenantDb(gym.id), { sub: user.id, kind: user.kind, name: user.name })
+  const { f = 'all', q = '', who } = await searchParams
+  const db = tenantDb(gym.id)
+  // "Any trainer can change plans": a trainer can also open every member.
+  const anyEditor = user.kind === 'TRAINER' && (await trainingSettings(db)).planEditors === 'any'
+  const everyone = anyEditor && who === 'everyone'
+  const roster = await loadRoster(db, { sub: user.id, kind: user.kind, name: user.name }, new Date(), everyone)
+  const staff = everyone ? await db.gymUser.findMany({ select: { id: true, name: true } }) : []
+  const trainerName = new Map(staff.map((person) => [person.id, person.name]))
+  const scope = everyone ? '&who=everyone' : ''
   const query = q.trim().toLowerCase()
   const rows = roster.filter((r) => {
     if (query && !`${r.name} ${r.memberCode}`.toLowerCase().includes(query)) return false
@@ -36,11 +44,22 @@ export default async function RosterPage({ searchParams }: { searchParams: Promi
       <form className="filter-row" method="get">
         <input className="search-input" name="q" defaultValue={q} placeholder="Search name or code" />
         <input type="hidden" name="f" value={f} />
+        {everyone ? <input type="hidden" name="who" value="everyone" /> : null}
         <button className="btn btn-dark btn-sm">Search</button>
       </form>
+      {anyEditor ? (
+        <div className="tab-links" style={{ marginBottom: 10 }}>
+          <Link className={everyone ? '' : 'active'} href="/trainer/athletes">
+            My {gym.athleteLabelPlural.toLowerCase()}
+          </Link>
+          <Link className={everyone ? 'active' : ''} href="/trainer/athletes?who=everyone">
+            Everyone at the gym
+          </Link>
+        </div>
+      ) : null}
       <div className="tab-links" style={{ marginBottom: 14 }}>
         {FILTERS.map(([key, label]) => (
-          <Link key={key} className={f === key ? 'active' : ''} href={`/trainer/athletes?f=${key}${q ? `&q=${encodeURIComponent(q)}` : ''}`}>
+          <Link key={key} className={f === key ? 'active' : ''} href={`/trainer/athletes?f=${key}${q ? `&q=${encodeURIComponent(q)}` : ''}${scope}`}>
             {label}
           </Link>
         ))}
@@ -69,8 +88,9 @@ export default async function RosterPage({ searchParams }: { searchParams: Promi
                   {!r.hasPlan ? <span className="tag warn">No workout plan</span> : <span className="tag">Plan set</span>}
                   {r.pendingPt ? <span className="tag">{r.pendingPt} PT to confirm</span> : null}
                   {r.ptLeft ? <span className="tag">{r.ptLeft} PT left</span> : null}
+                  {!r.mine ? <span className="tag">{r.trainerId ? `${trainerName.get(r.trainerId) ?? 'Other'}'s member` : 'No trainer'}</span> : null}
                 </div>
-                <NudgeButton athleteId={r.id} name={r.name} compact />
+                {r.mine ? <NudgeButton athleteId={r.id} name={r.name} compact /> : null}
               </div>
             </div>
           ))}

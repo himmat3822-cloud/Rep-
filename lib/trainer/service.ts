@@ -32,24 +32,17 @@ export async function rosterAthlete(db: TenantDb, staff: Staff, athleteId: strin
   return athlete
 }
 
-// A member who asked this trainer (or any trainer) something in the last
-// 60 days can be coached by them too: open the member, update the plan,
-// leave a note. Money is never part of it. With "all trainers see
-// queries", any recent query counts.
-const ASKED_WINDOW_DAYS = 60
+// Who may change a member's split, diet and notes: their own trainer and
+// the owner always; any trainer when the owner set "Any trainer can change
+// plans" (Settings > App). The member sees who updated it last.
+export async function canEditPlans(db: TenantDb, staff: Staff, athlete: { trainerId: string | null }): Promise<boolean> {
+  if (staff.kind === 'OWNER' || athlete.trainerId === staff.sub) return true
+  return (await trainingSettings(db)).planEditors === 'any'
+}
 
 export async function coachAthlete(db: TenantDb, staff: Staff, athleteId: string) {
-  const own = await db.athlete.findFirst({ where: { id: athleteId, ...rosterWhere(staff) } })
-  if (own) return own
-  const since = new Date(Date.now() - ASKED_WINDOW_DAYS * 86400000)
-  const all = (await trainingSettings(db)).queryRouting === 'all'
-  const asked = await db.memberQuery.findFirst({
-    where: { athleteId, createdAt: { gte: since }, ...(all ? {} : { OR: [{ trainerId: staff.sub }, { trainerId: null }] }) },
-    select: { id: true },
-  })
-  if (!asked) throw new ApiError(404, 'NOT_FOUND', 'This member is not on your roster')
   const athlete = await db.athlete.findFirst({ where: { id: athleteId, archived: false } })
-  if (!athlete) throw new ApiError(404, 'NOT_FOUND', 'This member is not on your roster')
+  if (!athlete || !(await canEditPlans(db, staff, athlete))) throw new ApiError(404, 'NOT_FOUND', 'This member is not on your roster. Only their own trainer can change their plan.')
   return athlete
 }
 
@@ -72,6 +65,10 @@ export async function assignSplit(db: TenantDb, gym: { id: string; slug: string 
     await tx.workoutSplit.updateMany({ where: { athleteId: athlete.id, active: true }, data: { active: false } })
     return tx.workoutSplit.create({ data: { gymId: gym.id, athleteId: athlete.id, createdById: staff.sub, days, dietNotes: input.dietNotes.trim(), dietMeals: (input.dietMeals ?? []).filter((meal) => meal.items.trim()).slice(0, 8).map((meal) => ({ name: meal.name, time: meal.time, items: meal.items })), active: true } })
   })
+  // Another trainer changed this member's plan: tell their own trainer.
+  if (athlete.trainerId && athlete.trainerId !== staff.sub) {
+    await db.notification.create({ data: { gymId: gym.id, recipientType: 'STAFF', recipientId: athlete.trainerId, title: `${staff.name} updated ${athlete.name}'s plan`, body: 'Workout split and diet were changed. Open the member to see it.', href: `/trainer/athletes/${athlete.id}?tab=plan` } })
+  }
   if (notify) {
     const lang = athlete.language as Lang
     await notifyAthlete(db, gym, athlete.id, { title: translate(lang, 'coach', 'notifPlanTitle'), body: translate(lang, 'coach', 'notifPlanBody', { name: firstName(staff.name) }), path: '/schedule', tag: 'plan' })

@@ -32,7 +32,7 @@ describe('diet by meals (pure)', () => {
 describe('owner training settings (pure)', () => {
   it('defaults keep today\'s behaviour', () => {
     const settings = parseGymSettings({})
-    expect(settings).toMatchObject({ ownerTrains: false, ownerTrainingView: 'together', queryRouting: 'chosen' })
+    expect(settings).toMatchObject({ ownerTrains: false, ownerTrainingView: 'together', queryRouting: 'chosen', planEditors: 'assigned' })
     const form = gymAppSettingsSchema.shape
     expect(form.queryRouting.parse(undefined)).toBe('chosen')
   })
@@ -94,17 +94,29 @@ describe('member picks a trainer; owner decides who sees it (database)', () => {
     expect(notified).toEqual([G.owner.id, daniel.id].sort())
   })
 
-  it('Daniel can give a split with meals to a member who is not on his roster, after they asked him', async () => {
+  it('"only their own trainer": Daniel cannot change Inder\'s member; Inder and the owner can', async () => {
+    await setSettings({ planEditors: 'assigned' })
+    const day = [{ weekday: 1, title: 'Push', focus: '', minutes: 60, exercises: [{ name: 'Bench', sets: 4, reps: '8' }] }]
+    await expect(assignSplit(db, gymRef(), { sub: daniel.id, kind: 'TRAINER', name: 'Daniel' }, G.athlete.id, { days: day, dietNotes: '' })).rejects.toThrow(/Only their own trainer/)
+    const byInder = await assignSplit(db, gymRef(), { sub: inder.id, kind: 'TRAINER', name: 'Inder' }, G.athlete.id, { days: day, dietNotes: '' })
+    expect(byInder.createdById).toBe(inder.id)
+    const byOwner = await assignSplit(db, gymRef(), { sub: G.owner.id, kind: 'OWNER', name: 'Owner' }, G.athlete.id, { days: day, dietNotes: '' })
+    expect(byOwner.createdById).toBe(G.owner.id)
+  })
+
+  it('"any trainer": Daniel updates the split and meal-wise diet, shown as his, and Inder is told', async () => {
+    await setSettings({ planEditors: 'any' })
     const split = await assignSplit(db, gymRef(), { sub: daniel.id, kind: 'TRAINER', name: 'Daniel' }, G.athlete.id, {
       days: [{ weekday: 1, title: 'Push', focus: '', minutes: 60, exercises: [{ name: 'Bench', sets: 4, reps: '8' }] }],
       dietNotes: '3 litres water',
       dietMeals: [{ name: 'Meal 1', time: '8 AM', items: 'Poha and curd' }, { name: 'Meal 2', time: '1 PM', items: '' }],
     })
+    expect(split.createdById).toBe(daniel.id)
     expect(parseMeals(split.dietMeals)).toEqual([{ name: 'Meal 1', time: '8 AM', items: 'Poha and curd' }])
-    // A trainer the member never asked still cannot.
-    const outsider = await db.gymUser.create({ data: { gymId: G.gym.id, roleId: G.role.id, kind: 'TRAINER', name: 'Lakshay', phone: `+9191${Math.floor(10000000 + Math.random() * 89999999)}` } })
-    await expect(assignSplit(db, gymRef(), { sub: outsider.id, kind: 'TRAINER', name: 'Lakshay' }, G.athlete.id, { days: [], dietNotes: '' })).rejects.toThrow(/not on your roster/)
-    await db.gymUser.update({ where: { id: outsider.id }, data: { active: false } })
+    expect(await db.workoutSplit.count({ where: { athleteId: G.athlete.id, active: true } })).toBe(1)
+    const told = await db.notification.findFirst({ where: { recipientId: inder.id, title: { contains: 'Daniel updated' } } })
+    expect(told?.href).toContain(G.athlete.id)
+    await setSettings({ planEditors: 'assigned' })
   })
 
   it('"all trainers see queries": everyone sees it, with who it was sent to, and anyone can answer', async () => {

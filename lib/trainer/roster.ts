@@ -18,10 +18,15 @@ export interface RosterRow {
   hasPlan: boolean
   pendingPt: number
   ptLeft: number
+  // Assigned to this trainer (false only in the "all members" list).
+  mine: boolean
+  trainerId: string | null
 }
 
-export async function loadRoster(db: TenantDb, staff: { sub: string; kind: string; name: string }, now: Date = new Date()): Promise<RosterRow[]> {
-  const athletes = await db.athlete.findMany({ where: rosterWhere(staff as never), orderBy: { name: 'asc' }, select: { id: true, name: true, memberCode: true, status: true, lastVisitAt: true, streakDays: true } })
+// everyone: every active member (when the owner lets any trainer change
+// plans), not just the trainer's own.
+export async function loadRoster(db: TenantDb, staff: { sub: string; kind: string; name: string }, now: Date = new Date(), everyone = false): Promise<RosterRow[]> {
+  const athletes = await db.athlete.findMany({ where: everyone ? { archived: false } : rosterWhere(staff as never), orderBy: { name: 'asc' }, select: { id: true, name: true, memberCode: true, status: true, lastVisitAt: true, streakDays: true, trainerId: true } })
   if (athletes.length === 0) return []
   const ids = athletes.map((a) => a.id)
   const today = istDateOnly(now)
@@ -56,5 +61,7 @@ export async function loadRoster(db: TenantDb, staff: { sub: string; kind: strin
     hasPlan: planned.has(a.id),
     pendingPt: ptBy.get(a.id) ?? 0,
     ptLeft: ptLeftBy.get(a.id) ?? 0,
+    mine: staff.kind === 'OWNER' || a.trainerId === staff.sub,
+    trainerId: a.trainerId,
   }))
 }

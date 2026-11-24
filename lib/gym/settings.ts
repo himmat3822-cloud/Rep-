@@ -58,6 +58,9 @@ export const gymSettingsSchema = z.object({
   ownerTrainingView: z.enum(['together', 'separate']).default('together'),
   // Member queries: only the trainer the member picked, or every trainer.
   queryRouting: z.enum(['chosen', 'all']).default('chosen'),
+  // Who may change a member's workout split and diet: only the member's
+  // assigned trainer (and the owner), or any trainer at the gym.
+  planEditors: z.enum(['assigned', 'any']).default('assigned'),
   renewEarlyDiscountPct: z.number().int().min(0).max(50).default(0),
   referralRewardDays: z.number().int().min(0).max(60).default(7),
   invoicePrefix: z.string().regex(/^[A-Z]{1,4}$/).optional(),

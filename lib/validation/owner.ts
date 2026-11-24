@@ -108,6 +108,9 @@ export const gymAppSettingsSchema = z.object({
   // chosen: a member query goes to the trainer the member picked;
   // all: every trainer sees it (and who it was sent to).
   queryRouting: z.enum(['chosen', 'all']).default('chosen'),
+  // assigned: only the member's own trainer edits their split and diet;
+  // any: every trainer can, and the member sees who updated it.
+  planEditors: z.enum(['assigned', 'any']).default('assigned'),
   sessionMinutes: z.coerce.number().int().min(30).max(240),
   regularVisitsPerWeek: z.coerce.number().int().min(1).max(7),
   slippingAfterDays: z.coerce.number().int().min(2).max(30),
